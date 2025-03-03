@@ -49,6 +49,7 @@ process.stdin.on("data", (chunk) => {
     }
     const rawMessage = buffer.slice(messageStart, messageStart + contentLength);
     const message = JSON.parse(rawMessage);
+    log.write(message);
 
     log.write({
       id: message.id,
