@@ -64,5 +64,5 @@ export const definition = (message: RequestMessage): Location | void => {
 };
 
 function getInertiaPage(pageName: string) {
-  return `file:///Users/felix/code/clockin/resources/js/inertia-pages/${pageName}`;
+  return `file:///Users/felix/code/clockin/resources/js/inertia-pages/${pageName}.vue`;
 }

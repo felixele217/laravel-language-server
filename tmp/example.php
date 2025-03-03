@@ -6,12 +6,12 @@ class Controller
 {
     public function index()
     {
-        return Inertia::render('Dashboard/DashboardPage.vue', [
+        return Inertia::render('Dashboard/DashboardPage', [
             'name' => 'John Doe',
             'age' => 30,
         ]);
 
-        return Inertia::render('timesheet/TimesheetPage.vue', [
+        return Inertia::render('timesheet/TimesheetPage', [
             'name' => 'John Doe',
             'age' => 30,
         ]);
