@@ -1,40 +1,68 @@
+import log from "./log";
+import { initialize } from "./methods/initialize";
+import { completion } from "./methods/textDocument/completion";
 import {
-  createConnection,
-  TextDocuments,
-  ProposedFeatures,
-  InitializeParams,
-  TextDocumentSyncKind,
-  InitializeResult,
-} from "vscode-languageserver/node";
+  definition,
+  TextDocumentPositionParams,
+} from "./methods/textDocument/definition";
 
-import { TextDocument } from "vscode-languageserver-textdocument";
+interface Message {
+  jsonrpc: string;
+}
 
-// Create a connection for the server, using Node's IPC as a transport.
-// Also include all preview / proposed LSP features.
-const connection = createConnection(ProposedFeatures.all);
+export interface RequestMessage extends Message {
+  id: number | string;
+  method: string;
+  params?: unknown[] | TextDocumentPositionParams;
+}
 
-// Create a simple text document manager.
-const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
+type RequestMethod = (message: RequestMessage) => unknown;
 
-connection.onInitialize((params: InitializeParams) => {
-  const result: InitializeResult = {
-    capabilities: {
-      textDocumentSync: TextDocumentSyncKind.Incremental,
-    },
-  };
+const methodLookup: Record<string, RequestMethod> = {
+  initialize,
+  "textDocument/completion": completion,
+  "textDocument/definition": definition,
+};
 
-  return result;
+const respond = (id: RequestMessage["id"], result: unknown) => {
+  const message = JSON.stringify({ id, result });
+  const messageLength = Buffer.byteLength(message, "utf8");
+  const header = `Content-Length: ${messageLength}\r\n\r\n`;
+
+  log.write(header + message);
+  process.stdout.write(header + message);
+};
+
+let buffer = "";
+
+process.stdin.on("data", (chunk) => {
+  buffer += chunk;
+  while (true) {
+    const lengthMatch = buffer.match(/Content-Length: (\d+)\r\n/);
+    if (!lengthMatch) {
+      break;
+    }
+    const contentLength = parseInt(lengthMatch[1], 10);
+    const messageStart = buffer.indexOf("\r\n\r\n") + 4;
+    if (buffer.length < messageStart + contentLength) {
+      break;
+    }
+    const rawMessage = buffer.slice(messageStart, messageStart + contentLength);
+    const message = JSON.parse(rawMessage);
+
+    log.write({
+      id: message.id,
+      method: message.method,
+      params: message.params,
+    });
+
+    const method = methodLookup[message.method];
+    log.write(message.method);
+
+    if (method) {
+      respond(message.id, method(message));
+    }
+
+    buffer = buffer.slice(messageStart + contentLength);
+  }
 });
-
-documents.onDidChangeContent((change) => {
-  connection.window.showInformationMessage(
-    "onDidChangeContent: " + change.document.uri
-  );
-});
-
-// Make the text document manager listen on the connection
-// for open, change and close text document events
-documents.listen(connection);
-
-// Listen on the connection
-connection.listen();
