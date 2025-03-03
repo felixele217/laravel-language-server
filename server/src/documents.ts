@@ -1,3 +1,4 @@
+import log from "./log";
 import { Position, Range } from "./types";
 
 export type DocumentUri = string;
@@ -18,7 +19,7 @@ export interface TextDocumentContentChangeEvent {
 
 export const documents = new Map<DocumentUri, DocumentBody>();
 
-type WordUnderCursor = {
+export type WordUnderCursor = {
   text: string;
   range: Range;
 };

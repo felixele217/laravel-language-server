@@ -5,6 +5,12 @@ import {
   definition,
   TextDocumentPositionParams,
 } from "./methods/textDocument/definition";
+import { didOpen } from "./methods/textDocument/didOpen";
+
+export interface NotificationMessage extends Message {
+  method: string;
+  params?: unknown[] | object;
+}
 
 interface Message {
   jsonrpc: string;
@@ -22,6 +28,7 @@ const methodLookup: Record<string, RequestMethod> = {
   initialize,
   "textDocument/completion": completion,
   "textDocument/definition": definition,
+  "textDocument/didOpen": didOpen,
 };
 
 const respond = (id: RequestMessage["id"], result: unknown) => {
