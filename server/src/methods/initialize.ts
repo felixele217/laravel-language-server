@@ -17,7 +17,7 @@ export const initialize = (message: RequestMessage): InitializeResult => {
       definitionProvider: {},
     },
     serverInfo: {
-      name: "lsp-from-scratch",
+      name: "laravel-language-server",
       version: "0.0.1",
     },
   };
