@@ -17,7 +17,6 @@ export const initialize = (message: RequestMessage): InitializeResult => {
         save: { includeText: true },
         change: 1, // incremental
         openClose: true,
-        willSave: true,
       },
       completionProvider: {},
       definitionProvider: {},
