@@ -13,7 +13,7 @@ interface InitializeResult {
 export const initialize = (message: RequestMessage): InitializeResult => {
   return {
     capabilities: {
-      textDocumentSync: 1,
+      textDocumentSync: 2,
       completionProvider: {},
       definitionProvider: {},
     },
