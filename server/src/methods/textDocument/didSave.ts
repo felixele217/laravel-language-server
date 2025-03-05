@@ -31,7 +31,9 @@ interface DidSaveTextDocumentParams {
 export const didSave = (message: NotificationMessage) => {
   const params = message.params as DidSaveTextDocumentParams;
 
-  if (params.text) {
-    documents.set(params.textDocument.uri, params.text);
+  if (!params.text || !params.textDocument.uri) {
+    return;
   }
+
+  documents.set(params.textDocument.uri, params.text);
 };

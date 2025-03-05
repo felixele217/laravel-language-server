@@ -15,15 +15,11 @@ export const initialize = (message: RequestMessage): InitializeResult => {
     capabilities: {
       textDocumentSync: {
         save: { includeText: true },
-        change: 2, // incremental
+        change: 1, // incremental
         openClose: true,
         willSave: true,
-        willSaveWaitUntil: false,
       },
-      completionProvider: {
-        resolveProvider: false, // Add this
-        triggerCharacters: [">"], // Add this
-      },
+      completionProvider: {},
       definitionProvider: {},
     },
     serverInfo: {

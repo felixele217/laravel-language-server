@@ -24,6 +24,7 @@ interface DidChangeTextDocumentParams {
 }
 
 export const didChange = (message: NotificationMessage) => {
-  // const params = message.params as DidChangeTextDocumentParams;
-  // documents.set(params.textDocument.uri, params.textDocument.text);
+  const params = message.params as DidChangeTextDocumentParams;
+
+  documents.set(params.textDocument.uri, params.textDocument.text);
 };

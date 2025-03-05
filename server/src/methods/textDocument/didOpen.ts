@@ -16,7 +16,9 @@ interface DidOpenTextDocumentParams {
 export const didOpen = (message: NotificationMessage) => {
   const params = message.params as DidOpenTextDocumentParams;
 
-  documents.set(params.textDocument.uri, params.textDocument.text ?? "halo");
-  log.write("documents.get");
-  log.write(documents.get(params.textDocument.uri));
+  if (!params.textDocument.uri || !params.textDocument.text) {
+    return;
+  }
+
+  documents.set(params.textDocument.uri, params.textDocument.text);
 };

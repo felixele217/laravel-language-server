@@ -5,7 +5,6 @@ interface DidCloseTextDocumentParams {
   textDocument: TextDocumentIdentifier;
 }
 export const didClose = (message: NotificationMessage) => {
-  const params = message.params as DidCloseTextDocumentParams;
-
-  documents.set(params.textDocument.uri, "");
+  // const params = message.params as DidCloseTextDocumentParams;
+  // documents.set(params.textDocument.uri, "");
 };
