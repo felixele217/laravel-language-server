@@ -1,4 +1,5 @@
 import { DocumentUri, documents } from "../../documents";
+import log from "../../log";
 import { NotificationMessage } from "../../server";
 
 type TextDocumentItem = {
@@ -15,5 +16,7 @@ interface DidOpenTextDocumentParams {
 export const didOpen = (message: NotificationMessage) => {
   const params = message.params as DidOpenTextDocumentParams;
 
-  documents.set(params.textDocument.uri, params.textDocument.text);
+  documents.set(params.textDocument.uri, params.textDocument.text ?? "halo");
+  log.write("documents.get");
+  log.write(documents.get(params.textDocument.uri));
 };

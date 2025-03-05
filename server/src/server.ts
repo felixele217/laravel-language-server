@@ -32,8 +32,8 @@ const methodLookup: Record<string, RequestMethod> = {
   "textDocument/completion": completion,
   "textDocument/definition": definition,
   "textDocument/didOpen": didOpen,
-  "textDocument/didChange": didChange,
-  "textDocument/didClose": didClose,
+  // "textDocument/didChange": didChange,
+  // "textDocument/didClose": didClose,
   "textDocument/didSave": didSave,
 };
 
@@ -59,39 +59,6 @@ process.stdin.on("data", (chunk) => {
       `Processing message - Header: ${headerLength}, Content: ${contentLength}, Total: ${totalLength}, Have: ${buffer.length}`,
     );
 
-    // If we're within 2 bytes of the expected length, try to process anyway
-    // This handles potential length calculation discrepancies
-    if (buffer.length < totalLength) {
-      if (totalLength - buffer.length <= 2 && buffer.length >= headerLength) {
-        // Try to process what we have
-        try {
-          const rawMessage = buffer.slice(headerLength);
-          const message = JSON.parse(rawMessage);
-
-          log.write(
-            `Successfully parsed nearly-complete message: ${message.method}`,
-          );
-
-          const method = methodLookup[message.method];
-          if (method) {
-            respond(message.id, method(message), message);
-          }
-
-          buffer = ""; // Clear buffer since we processed the message
-          break;
-        } catch (error: any) {
-          log.write(
-            `Failed to parse nearly-complete message: ${error.message}`,
-          );
-          break;
-        }
-      }
-      log.write(
-        `Waiting for more data. Have ${buffer.length}, need ${totalLength}`,
-      );
-      break;
-    }
-
     try {
       const rawMessage = buffer.slice(
         headerLength,
@@ -99,21 +66,13 @@ process.stdin.on("data", (chunk) => {
       );
       const message = JSON.parse(rawMessage);
 
-      log.write(`Successfully parsed message: ${message.method}`);
-      if (message.method === "textDocument/didChange") {
-        log.write(`didChange params: ${JSON.stringify(message.params)}`);
-      }
-
       // fleix TODO: didSave und didChange gehen noch nicht
-      if (message.method === "textDocument/didSave") {
-        log.write(`didSave params: ${JSON.stringify(message.params)}`);
-      }
       log.write(`Successfully parsed message: ${message.method}`);
 
       const method = methodLookup[message.method];
 
       if (method) {
-        respond(message.id, method(message), message);
+        respond(message.id, method(message), message.method);
       }
 
       buffer = buffer.slice(totalLength);
@@ -126,7 +85,7 @@ process.stdin.on("data", (chunk) => {
 });
 
 // Modify the respond function to ensure proper message formatting
-const respond = (id: RequestMessage["id"], result: unknown, gc: any) => {
+const respond = (id: RequestMessage["id"], result: unknown, method: any) => {
   const response = JSON.stringify({ id, result });
   const messageLength = Buffer.byteLength(response, "utf8");
   const header = `Content-Length: ${messageLength}\r\n\r\n`;
@@ -134,6 +93,11 @@ const respond = (id: RequestMessage["id"], result: unknown, gc: any) => {
   const fullMessage = header + response;
   process.stdout.write(fullMessage);
 
+  log.write(`-----------------------`);
+  log.write(`RESPONSE`);
+  log.write(`Full Message: ${response}\n`);
+  log.write(`ID, result: ${method}\n`);
   log.write(`Response Message: ${messageLength}`);
   log.write(`Sent response of length ${messageLength}\n`);
+  log.write(`-----------------------`);
 };
