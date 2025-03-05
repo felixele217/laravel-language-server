@@ -8,6 +8,7 @@ import {
 import { didOpen } from "./methods/textDocument/didOpen";
 import { didChange } from "./methods/textDocument/didChange";
 import { didClose } from "./methods/textDocument/didClose";
+import { didSave } from "./methods/textDocument/didSave";
 
 export interface NotificationMessage extends Message {
   method: string;
@@ -33,6 +34,7 @@ const methodLookup: Record<string, RequestMethod> = {
   "textDocument/didOpen": didOpen,
   "textDocument/didChange": didChange,
   "textDocument/didClose": didClose,
+  "textDocument/didSave": didSave,
 };
 
 let buffer = "";
@@ -98,6 +100,15 @@ process.stdin.on("data", (chunk) => {
       const message = JSON.parse(rawMessage);
 
       log.write(`Successfully parsed message: ${message.method}`);
+      if (message.method === "textDocument/didChange") {
+        log.write(`didChange params: ${JSON.stringify(message.params)}`);
+      }
+
+      // fleix TODO: didSave und didChange gehen noch nicht
+      if (message.method === "textDocument/didSave") {
+        log.write(`didSave params: ${JSON.stringify(message.params)}`);
+      }
+      log.write(`Successfully parsed message: ${message.method}`);
 
       const method = methodLookup[message.method];
 
@@ -124,5 +135,5 @@ const respond = (id: RequestMessage["id"], result: unknown, gc: any) => {
   process.stdout.write(fullMessage);
 
   log.write(`Response Message: ${messageLength}`);
-  log.write(`Sent response of length ${messageLength}`);
+  log.write(`Sent response of length ${messageLength}\n`);
 };
