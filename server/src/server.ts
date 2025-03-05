@@ -6,6 +6,8 @@ import {
   TextDocumentPositionParams,
 } from "./methods/textDocument/definition";
 import { didOpen } from "./methods/textDocument/didOpen";
+import { didChange } from "./methods/textDocument/didChange";
+import { didClose } from "./methods/textDocument/didClose";
 
 export interface NotificationMessage extends Message {
   method: string;
@@ -29,48 +31,96 @@ const methodLookup: Record<string, RequestMethod> = {
   "textDocument/completion": completion,
   "textDocument/definition": definition,
   "textDocument/didOpen": didOpen,
-};
-
-const respond = (id: RequestMessage["id"], result: unknown) => {
-  const message = JSON.stringify({ id, result });
-  const messageLength = Buffer.byteLength(message, "utf8");
-  const header = `Content-Length: ${messageLength}\r\n\r\n`;
-
-  log.write(header + message);
-  process.stdout.write(header + message);
+  "textDocument/didChange": didChange,
+  "textDocument/didClose": didClose,
 };
 
 let buffer = "";
 
 process.stdin.on("data", (chunk) => {
   buffer += chunk;
-  while (true) {
-    const lengthMatch = buffer.match(/Content-Length: (\d+)\r\n/);
-    if (!lengthMatch) {
+
+  while (buffer.length > 0) {
+    const headerMatch = buffer.match(/^Content-Length: (\d+)\r\n\r\n/);
+    if (!headerMatch) {
+      if (buffer.includes("Content-Length:")) {
+        buffer = buffer.slice(buffer.indexOf("Content-Length:"));
+      }
       break;
     }
-    const contentLength = parseInt(lengthMatch[1], 10);
-    const messageStart = buffer.indexOf("\r\n\r\n") + 4;
-    if (buffer.length < messageStart + contentLength) {
+
+    const contentLength = parseInt(headerMatch[1], 10);
+    const headerLength = headerMatch[0].length;
+    const totalLength = headerLength + contentLength;
+
+    log.write(
+      `Processing message - Header: ${headerLength}, Content: ${contentLength}, Total: ${totalLength}, Have: ${buffer.length}`,
+    );
+
+    // If we're within 2 bytes of the expected length, try to process anyway
+    // This handles potential length calculation discrepancies
+    if (buffer.length < totalLength) {
+      if (totalLength - buffer.length <= 2 && buffer.length >= headerLength) {
+        // Try to process what we have
+        try {
+          const rawMessage = buffer.slice(headerLength);
+          const message = JSON.parse(rawMessage);
+
+          log.write(
+            `Successfully parsed nearly-complete message: ${message.method}`,
+          );
+
+          const method = methodLookup[message.method];
+          if (method) {
+            respond(message.id, method(message), message);
+          }
+
+          buffer = ""; // Clear buffer since we processed the message
+          break;
+        } catch (error: any) {
+          log.write(
+            `Failed to parse nearly-complete message: ${error.message}`,
+          );
+          break;
+        }
+      }
+      log.write(
+        `Waiting for more data. Have ${buffer.length}, need ${totalLength}`,
+      );
       break;
     }
-    const rawMessage = buffer.slice(messageStart, messageStart + contentLength);
-    const message = JSON.parse(rawMessage);
-    log.write(message);
 
-    log.write({
-      id: message.id,
-      method: message.method,
-      params: message.params,
-    });
+    try {
+      const rawMessage = buffer.slice(
+        headerLength,
+        headerLength + contentLength,
+      );
+      const message = JSON.parse(rawMessage);
 
-    const method = methodLookup[message.method];
-    log.write(message.method);
+      log.write(`Successfully parsed message: ${message.method}`);
 
-    if (method) {
-      respond(message.id, method(message));
+      const method = methodLookup[message.method];
+      if (method) {
+        respond(message.id, method(message), message);
+      }
+
+      buffer = buffer.slice(totalLength);
+    } catch (error: any) {
+      log.write(`Error processing message: ${error.message}`);
+      // Skip this malformed message
+      buffer = buffer.slice(totalLength);
     }
-
-    buffer = buffer.slice(messageStart + contentLength);
   }
 });
+
+// Modify the respond function to ensure proper message formatting
+const respond = (id: RequestMessage["id"], result: unknown, gc: any) => {
+  const response = JSON.stringify({ id, result });
+  const messageLength = Buffer.byteLength(response, "utf8");
+  const header = `Content-Length: ${messageLength}\r\n\r\n`;
+
+  const fullMessage = header + response;
+  process.stdout.write(fullMessage);
+
+  log.write(`Sent response of length ${messageLength}`);
+};

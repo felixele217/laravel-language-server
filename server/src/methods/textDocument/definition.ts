@@ -1,18 +1,9 @@
 import { WordUnderCursor, wordUnderCursor } from "../../documents";
 import log from "../../log";
 import { RequestMessage } from "../../server";
+import { Position, Range } from "../../types";
 
 type DocumentUri = string;
-
-interface Position {
-  line: number;
-  character: number;
-}
-
-interface Range {
-  start: Position;
-  end: Position;
-}
 
 interface Location {
   uri: DocumentUri;
