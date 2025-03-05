@@ -100,6 +100,7 @@ process.stdin.on("data", (chunk) => {
       log.write(`Successfully parsed message: ${message.method}`);
 
       const method = methodLookup[message.method];
+
       if (method) {
         respond(message.id, method(message), message);
       }
@@ -122,5 +123,6 @@ const respond = (id: RequestMessage["id"], result: unknown, gc: any) => {
   const fullMessage = header + response;
   process.stdout.write(fullMessage);
 
+  log.write(`Response Message: ${messageLength}`);
   log.write(`Sent response of length ${messageLength}`);
 };
