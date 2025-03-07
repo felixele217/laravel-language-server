@@ -31,21 +31,7 @@ export const completion = (message: RequestMessage): CompletionList | null => {
   const items = [];
 
   if (currentWord.type === "inertia-render") {
-    const cwd = process.cwd();
-    const pagesDir = path.join(cwd, "resources", "js", "inertia-pages");
-
-    try {
-      const files = fs.readdirSync(pagesDir, { recursive: true });
-      for (const file of files) {
-        if (typeof file === "string" && file.endsWith(".vue")) {
-          // Remove .vue extension and convert to completion item
-          const pagePath = file.replace(/\.vue$/, "");
-          items.push({ label: pagePath });
-        }
-      }
-    } catch (error) {
-      console.error("Failed to read Inertia pages directory:", error);
-    }
+    items.push(getInertiaPageNames());
   }
 
   return {
@@ -53,3 +39,39 @@ export const completion = (message: RequestMessage): CompletionList | null => {
     items: items,
   };
 };
+
+function getInertiaPageNames() {
+  const items = [];
+  const cwd = process.cwd();
+  const pagesDir = path.join(cwd, "resources", "js", "inertia-pages");
+
+  try {
+    const firstLevelItems = fs.readdirSync(pagesDir, { withFileTypes: true });
+
+    for (const item of firstLevelItems) {
+      if (item.isFile() && item.name.endsWith(".vue")) {
+        // Add depth 1 .vue files
+        const pagePath = item.name.replace(/\.vue$/, "");
+        items.push({ label: pagePath });
+      } else if (item.isDirectory()) {
+        // Get second level items (depth 2)
+        const secondLevelPath = path.join(pagesDir, item.name);
+        const secondLevelItems = fs.readdirSync(secondLevelPath, {
+          withFileTypes: true,
+        });
+
+        for (const subItem of secondLevelItems) {
+          if (subItem.isFile() && subItem.name.endsWith(".vue")) {
+            // Add depth 2 .vue files with their parent directory
+            const pagePath = `${item.name}/${subItem.name.replace(/\.vue$/, "")}`;
+            items.push({ label: pagePath });
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Failed to read Inertia pages directory:", error);
+  }
+
+  return items;
+}
