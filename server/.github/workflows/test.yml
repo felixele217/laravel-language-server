@@ -1,0 +1,45 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18, 20]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
+
+      # Install dependencies for both root and server
+      - name: Install root dependencies
+        run: npm ci
+
+      # The postinstall script will handle server dependencies
+      # but we'll make it explicit for clarity
+      - name: Install server dependencies
+        working-directory: ./server
+        run: npm ci
+
+      # Run tests in server directory
+      - name: Run server tests
+        working-directory: ./server
+        run: npm test
+
