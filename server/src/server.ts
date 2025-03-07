@@ -41,99 +41,97 @@ const methodLookup: Record<string, RequestMethod> = {
   "textDocument/willSaveWaitUntil": willSaveWaitUntil,
 };
 
-let buffer = "";
+class MessageParser {
+  private buffer: Buffer;
 
-process.stdin.on("data", (chunk) => {
-  buffer += chunk;
+  constructor() {
+    this.buffer = Buffer.from([]);
+  }
 
-  while (buffer.length > 0) {
-    const headerMatch = buffer.match(/^Content-Length: (\d+)\r\n\r\n/);
-    if (!headerMatch) {
-      if (buffer.includes("Content-Length:")) {
-        buffer = buffer.slice(buffer.indexOf("Content-Length:"));
-      }
-      break;
-    }
+  append(chunk: Buffer | string): void {
+    const newChunk = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    this.buffer = Buffer.concat([this.buffer, newChunk]);
+    this.processBuffer();
+  }
 
-    const contentLength = parseInt(headerMatch[1], 10);
-    const headerLength = headerMatch[0].length;
-    const totalLength = headerLength + contentLength;
+  private processBuffer(): void {
+    while (this.buffer.length > 0) {
+      const headerEnd = this.buffer.indexOf("\r\n\r\n");
+      if (headerEnd === -1) return;
 
-    log.write(
-      `Processing message - Header: ${headerLength}, Content: ${contentLength}, Total: ${totalLength}, Have: ${buffer.length}`,
-    );
-
-    // If we're within 2 bytes of the expected length, try to process anyway
-    // This handles potential length calculation discrepancies
-    if (buffer.length < totalLength) {
-      if (totalLength - buffer.length <= 2 && buffer.length >= headerLength) {
-        // Try to process what we have
-        try {
-          const rawMessage = buffer.slice(headerLength);
-          const message = JSON.parse(rawMessage);
-
-          log.write(
-            `Successfully parsed nearly-complete message: ${message.method}`,
-          );
-
-          const method = methodLookup[message.method];
-          if (method) {
-            respond(message.id, method(message), message);
-          }
-
-          buffer = ""; // Clear buffer since we processed the message
-          break;
-        } catch (error: any) {
-          log.write(
-            `Failed to parse nearly-complete message: ${error.message}`,
-          );
-          break;
+      const headerStr = this.buffer.slice(0, headerEnd).toString();
+      const match = headerStr.match(/Content-Length: (\d+)/);
+      if (!match) {
+        // Invalid header, skip to next possible header
+        const nextHeader = this.buffer.indexOf("Content-Length:", 1);
+        if (nextHeader === -1) {
+          this.buffer = Buffer.from([]);
+        } else {
+          this.buffer = this.buffer.slice(nextHeader);
         }
-      }
-      log.write(
-        `Waiting for more data. Have ${buffer.length}, need ${totalLength}`,
-      );
-      break;
-    }
-
-    try {
-      const rawMessage = buffer.slice(
-        headerLength,
-        headerLength + contentLength,
-      );
-      const message = JSON.parse(rawMessage);
-
-      log.write(`Successfully parsed message: ${message.method}`);
-
-      const method = methodLookup[message.method];
-
-      if (method) {
-        respond(message.id, method(message), message);
+        return;
       }
 
-      buffer = buffer.slice(totalLength);
-    } catch (error: any) {
-      log.write(`Error processing message: ${error.message}`);
-      // Skip this malformed message
-      buffer = buffer.slice(totalLength);
+      const contentLength = parseInt(match[1], 10);
+      const messageStart = headerEnd + 4; // Skip \r\n\r\n
+      const messageEnd = messageStart + contentLength;
+
+      if (this.buffer.length < messageEnd) {
+        // Not enough data yet
+        return;
+      }
+
+      try {
+        const rawMessage = this.buffer.slice(messageStart, messageEnd);
+        const message = JSON.parse(rawMessage.toString());
+
+        log.write(`Processing message: ${message.method}`);
+
+        const method = methodLookup[message.method];
+        if (method) {
+          respond(message.id, method(message), message);
+        }
+
+        // Remove processed message from buffer
+        this.buffer = this.buffer.slice(messageEnd);
+      } catch (error: any) {
+        log.write(`Error processing message: ${error.message}`);
+        // Skip this malformed message
+        this.buffer = this.buffer.slice(messageEnd);
+      }
     }
   }
+}
+
+const parser = new MessageParser();
+
+process.stdin.on("data", (chunk) => {
+  parser.append(chunk);
 });
 
-// Modify the respond function to ensure proper message formatting
-const respond = (id: RequestMessage["id"], result: unknown, method: any) => {
-  const response = JSON.stringify({ id, result });
+const respond = (
+  id: RequestMessage["id"],
+  result: unknown,
+  message: RequestMessage,
+) => {
+  if (!id) return; // Don't respond to notifications (messages without id)
+
+  const response = JSON.stringify({
+    jsonrpc: "2.0",
+    id: id,
+    result: result ?? null, // Ensure result is never undefined
+  });
+
   const messageLength = Buffer.byteLength(response, "utf8");
   const header = `Content-Length: ${messageLength}\r\n\r\n`;
-
   const fullMessage = header + response;
+
   process.stdout.write(fullMessage);
 
   log.write(`-----------------------`);
   log.write(`RESPONSE`);
-  log.write(`Full Message: ${response}\n`);
-  log.write(`ID, result: ${method}\n`);
-  log.write(`Response Message: ${messageLength}`);
-  log.write(`Sent response of length ${messageLength}\n`);
+  log.write(`Full Message: ${response}`);
+  log.write(`Method: ${message.method}`);
+  log.write(`Response Length: ${messageLength}`);
   log.write(`-----------------------`);
 };
