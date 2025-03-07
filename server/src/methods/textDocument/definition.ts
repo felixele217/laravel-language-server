@@ -24,17 +24,11 @@ export const definition = (message: RequestMessage): Location | void => {
 
   const currentWord = wordUnderCursor(params.textDocument.uri, params.position);
 
-  if (!currentWord) return;
+  if (!currentWord || currentWord.type === null) return;
 
-  let uri = null;
+  let uri = getUri(currentWord);
 
-  if (currentWord.type === null) return;
-
-  uri = getUri(currentWord);
-
-  if (!uri) {
-    return;
-  }
+  if (!uri) return;
 
   return {
     uri,
