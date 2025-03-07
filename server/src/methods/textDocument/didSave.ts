@@ -3,7 +3,6 @@ import {
   TextDocumentIdentifier,
   documents,
 } from "../../documents";
-import log from "../../log";
 import { NotificationMessage } from "../../server";
 import { Range } from "../../types";
 
@@ -15,13 +14,6 @@ export type TextDocumentContentChangeEvent =
   | {
       text: string;
     };
-
-type TextDocumentItem = {
-  uri: DocumentUri;
-  languageId: string;
-  version: number;
-  text: string;
-};
 
 interface DidSaveTextDocumentParams {
   textDocument: TextDocumentIdentifier;
