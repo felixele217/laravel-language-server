@@ -23,7 +23,6 @@ export const wordUnderCursor = (
   const lines = document.split("\n");
   const line = lines[position.line];
 
-  log.write("wordUnderCursor" + line);
   const start = line.lastIndexOf(" ", position.character) + 1;
   const end = line.indexOf(" ", position.character);
 

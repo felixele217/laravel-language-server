@@ -1,6 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { WordUnderCursor } from "./wordUnderCursor";
+import { inertiaPagesDir } from "../config";
 
 export function getUri(currentWord: WordUnderCursor) {
   if (currentWord.type === "inertia-render") {
@@ -16,14 +17,7 @@ function getInertiaUri(currentWord: WordUnderCursor) {
   }
 
   const pageName = getInertiaPageName(currentWord);
-  const cwd = process.cwd();
-  const filePath = path.join(
-    cwd,
-    "resources",
-    "js",
-    "inertia-pages",
-    `${pageName}.vue`,
-  );
+  const filePath = path.join(inertiaPagesDir, `${pageName}.vue`);
 
   if (!fs.existsSync(filePath)) {
     return;

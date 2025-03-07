@@ -1,3 +1,4 @@
+import { inertiaPagesDir } from "../../config";
 import { documents } from "../../documents";
 import { RequestMessage } from "../../server";
 import { wordUnderCursor } from "../../utils/wordUnderCursor";
@@ -31,7 +32,7 @@ export const completion = (message: RequestMessage): CompletionList | null => {
   const items = [];
 
   if (currentWord.type === "inertia-render") {
-    items.push(getInertiaPageNames());
+    items.push(...getInertiaPageNames());
   }
 
   return {
@@ -42,8 +43,7 @@ export const completion = (message: RequestMessage): CompletionList | null => {
 
 function getInertiaPageNames() {
   const items = [];
-  const cwd = process.cwd();
-  const pagesDir = path.join(cwd, "resources", "js", "inertia-pages");
+  const pagesDir = inertiaPagesDir;
 
   try {
     const firstLevelItems = fs.readdirSync(pagesDir, { withFileTypes: true });
