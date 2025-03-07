@@ -2,6 +2,8 @@ import { documents } from "../../documents";
 import { RequestMessage } from "../../server";
 import { wordUnderCursor } from "../../utils/wordUnderCursor";
 import { TextDocumentPositionParams } from "./definition";
+import * as fs from "fs";
+import * as path from "path";
 
 type CompletionItem = {
   label: string;
@@ -29,9 +31,21 @@ export const completion = (message: RequestMessage): CompletionList | null => {
   const items = [];
 
   if (currentWord.type === "inertia-render") {
-    // felix TODO: get page names for completion
-    items.push({ label: "customer/Upsert" });
-    items.push({ label: "timesheet/TimesheetPage" });
+    const cwd = process.cwd();
+    const pagesDir = path.join(cwd, "resources", "js", "inertia-pages");
+
+    try {
+      const files = fs.readdirSync(pagesDir, { recursive: true });
+      for (const file of files) {
+        if (typeof file === "string" && file.endsWith(".vue")) {
+          // Remove .vue extension and convert to completion item
+          const pagePath = file.replace(/\.vue$/, "");
+          items.push({ label: pagePath });
+        }
+      }
+    } catch (error) {
+      console.error("Failed to read Inertia pages directory:", error);
+    }
   }
 
   return {
