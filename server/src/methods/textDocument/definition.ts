@@ -1,5 +1,4 @@
 import { WordUnderCursor, wordUnderCursor } from "../../documents";
-import log from "../../log";
 import { RequestMessage } from "../../server";
 import { Position, Range } from "../../types";
 
@@ -20,33 +19,18 @@ export interface TextDocumentPositionParams {
 
 export const definition = (message: RequestMessage): Location | void => {
   const params = message.params as TextDocumentPositionParams;
-  // const uri = params.textDocument.uri;
-  log.write("params from definition");
-  log.write(params);
 
   const currentWord = wordUnderCursor(params.textDocument.uri, params.position);
 
-  log.write("currentWord");
-  log.write(currentWord);
-
-  if (!currentWord) {
+  if (!currentWord?.text.includes("Inertia::render")) {
     return;
   }
 
-  const matches = currentWord!.text.match(/'([^']*)'/);
-  log.write("matches:");
-  log.write(matches);
+  const uri = getInertiaUri(currentWord);
 
-  if (!matches || !matches.length) {
+  if (!uri) {
     return;
   }
-
-  const pageName = matches[1];
-
-  log.write("pageName: ");
-  log.write(pageName);
-
-  const uri = getInertiaPage(pageName);
 
   return {
     uri,
@@ -54,6 +38,17 @@ export const definition = (message: RequestMessage): Location | void => {
   };
 };
 
-function getInertiaPage(pageName: string) {
-  return `file:///Users/felix/code/clockin/resources/js/inertia-pages/${pageName}.vue`;
-}
+const getInertiaUri = (currentWord: WordUnderCursor) => {
+  // the page name is the string inside the quotes
+  // a sample currentWord could be "Inertia::render('hello/world')"
+  const pageNameMatch = currentWord!.text.match(/'([^']*)'/);
+
+  if (!pageNameMatch || !pageNameMatch.length) {
+    return;
+  }
+
+  const pageName = pageNameMatch[1];
+  const cwd = process.cwd();
+
+  return `file:///${cwd}/resources/js/inertia-pages/${pageName}.vue`;
+};
