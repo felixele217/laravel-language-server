@@ -9,8 +9,6 @@ import { didOpen } from "./methods/textDocument/didOpen";
 import { didChange } from "./methods/textDocument/didChange";
 import { didClose } from "./methods/textDocument/didClose";
 import { didSave } from "./methods/textDocument/didSave";
-import { willSave } from "./methods/textDocument/willSave";
-import { willSaveWaitUntil } from "./methods/textDocument/willSaveWaitUntil";
 
 export interface NotificationMessage extends Message {
   method: string;
@@ -37,8 +35,6 @@ const methodLookup: Record<string, RequestMethod> = {
   "textDocument/didChange": didChange,
   "textDocument/didClose": didClose,
   "textDocument/didSave": didSave,
-  "textDocument/willSave": willSave,
-  "textDocument/willSaveWaitUntil": willSaveWaitUntil,
 };
 
 class MessageParser {
