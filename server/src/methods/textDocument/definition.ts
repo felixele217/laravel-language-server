@@ -1,6 +1,9 @@
 import { WordUnderCursor, wordUnderCursor } from "../../documents";
+import log from "../../log";
 import { RequestMessage } from "../../server";
 import { Position, Range } from "../../types";
+import * as fs from "fs";
+import * as path from "path";
 
 type DocumentUri = string;
 
@@ -39,8 +42,7 @@ export const definition = (message: RequestMessage): Location | void => {
 };
 
 const getInertiaUri = (currentWord: WordUnderCursor) => {
-  // the page name is the string inside the quotes
-  // a sample currentWord could be "Inertia::render('hello/world')"
+  // sample word under cursor: Inertia::render('pages/Welcome')
   const pageNameMatch = currentWord!.text.match(/'([^']*)'/);
 
   if (!pageNameMatch || !pageNameMatch.length) {
@@ -49,6 +51,17 @@ const getInertiaUri = (currentWord: WordUnderCursor) => {
 
   const pageName = pageNameMatch[1];
   const cwd = process.cwd();
+  const filePath = path.join(
+    cwd,
+    "resources",
+    "js",
+    "inertia-pages",
+    `${pageName}.vue`,
+  );
 
-  return `file:///${cwd}/resources/js/inertia-pages/${pageName}.vue`;
+  if (!fs.existsSync(filePath)) {
+    return;
+  }
+
+  return `file://${filePath}`.replace(/\\/g, "/");
 };
