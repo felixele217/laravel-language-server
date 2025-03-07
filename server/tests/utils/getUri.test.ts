@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { getUri } from "../../src/utils/getUri";
 import * as path from "path";
+import * as fs from "fs";
+import { WordUnderCursor } from "../../src/utils/wordUnderCursor";
 
 vi.mock("fs");
 vi.mock("path");
@@ -70,5 +72,3 @@ describe("getUri", () => {
     expect(getUri(word)).toBeUndefined();
   });
 });
-import * as fs from "fs";
-import { WordUnderCursor } from "../../src/utils/wordUnderCursor";
