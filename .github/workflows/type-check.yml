@@ -1,0 +1,46 @@
+name: Type Check
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  typecheck:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [22]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
+
+      # Install dependencies for both root and server
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install server dependencies
+        working-directory: ./server
+        run: npm ci
+
+      # Type check the server code
+      - name: Type check server
+        run: npm run compile:server
+
+      # Attempt to compile the entry point
+      - name: Verify server.ts compiles
+        working-directory: ./server
+        run: npx tsc src/server.ts --noEmit
