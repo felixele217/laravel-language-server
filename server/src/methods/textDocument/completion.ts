@@ -1,8 +1,7 @@
-import { documents, wordUnderCursor } from "../../documents";
-import log from "../../log";
+import { documents } from "../../documents";
 import { RequestMessage } from "../../server";
-import { currentWordIsInertiaRender } from "../../utils/inertia/checkCurrentWord";
-import { getInertiaPageName, TextDocumentPositionParams } from "./definition";
+import { wordUnderCursor } from "../../utils/wordUnderCursor";
+import { TextDocumentPositionParams } from "./definition";
 
 type CompletionItem = {
   label: string;

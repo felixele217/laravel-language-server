@@ -1,10 +1,8 @@
-import { WordUnderCursor, wordUnderCursor } from "../../documents";
 import log from "../../log";
 import { RequestMessage } from "../../server";
 import { Position, Range } from "../../types";
-import * as fs from "fs";
-import * as path from "path";
-import { currentWordIsInertiaRender } from "../../utils/inertia/checkCurrentWord";
+import { getUri } from "../../utils/getUri";
+import { WordUnderCursor, wordUnderCursor } from "../../utils/wordUnderCursor";
 
 type DocumentUri = string;
 
@@ -30,9 +28,9 @@ export const definition = (message: RequestMessage): Location | void => {
 
   let uri = null;
 
-  if (currentWord.type === "inertia-render") {
-    uri = getInertiaUri(currentWord);
-  }
+  if (currentWord.type === null) return;
+
+  uri = getUri(currentWord);
 
   if (!uri) {
     return;
@@ -42,39 +40,4 @@ export const definition = (message: RequestMessage): Location | void => {
     uri,
     range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } },
   };
-};
-
-export const getInertiaPageName = (currentWord: WordUnderCursor) => {
-  const pageNameMatch = currentWord!.text.match(/'([^']*)'/);
-
-  if (!pageNameMatch || !pageNameMatch.length) {
-    return;
-  }
-
-  return pageNameMatch[1];
-};
-
-const getInertiaUri = (currentWord: WordUnderCursor) => {
-  // sample word under cursor: Inertia::render('pages/Welcome')
-  const pageNameMatch = currentWord!.text.match(/'([^']*)'/);
-
-  if (!pageNameMatch || !pageNameMatch.length) {
-    return;
-  }
-
-  const pageName = getInertiaPageName(currentWord);
-  const cwd = process.cwd();
-  const filePath = path.join(
-    cwd,
-    "resources",
-    "js",
-    "inertia-pages",
-    `${pageName}.vue`,
-  );
-
-  if (!fs.existsSync(filePath)) {
-    return;
-  }
-
-  return `file://${filePath}`.replace(/\\/g, "/");
 };
