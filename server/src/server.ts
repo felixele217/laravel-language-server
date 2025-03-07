@@ -35,7 +35,7 @@ const methodLookup: Record<string, RequestMethod> = {
   "textDocument/didSave": didSave,
 };
 
-class MessageParser {
+export class MessageParser {
   private buffer: Buffer;
 
   constructor() {
