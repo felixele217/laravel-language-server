@@ -11,5 +11,10 @@
     "type": "git",
     "url": "REPLACE_ME"
   },
-  "dependencies": {}
+  "devDependencies": {
+    "vitest": "^3.0.8"
+  },
+  "scripts": {
+    "test": "vitest"
+  }
 }
