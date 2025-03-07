@@ -34,7 +34,9 @@ export const completion = (message: RequestMessage): CompletionList | null => {
 
   const items = [];
 
-  items.push({ label: "hallo es geht" });
+  // felix TODO: get page names for completion
+  items.push({ label: "customer/Upsert" });
+  items.push({ label: "timesheet/TimesheetPage" });
 
   return {
     isIncomplete: false,
