@@ -1,7 +1,8 @@
 import { inertiaPagesDir } from "../../config";
 import { documents } from "../../documents";
+import log from "../../log";
 import { RequestMessage } from "../../server";
-import { wordUnderCursor } from "../../utils/wordUnderCursor";
+import { WordUnderCursor, wordUnderCursor } from "../../utils/wordUnderCursor";
 import { TextDocumentPositionParams } from "./definition";
 import * as fs from "fs";
 import * as path from "path";
@@ -28,11 +29,12 @@ export const completion = (message: RequestMessage): CompletionList | null => {
   const currentWord = wordUnderCursor(params.textDocument.uri, params.position);
 
   if (!currentWord) return null;
+  log.write("currentWord: " + currentWord.text);
 
   const items = [];
 
   if (currentWord.type === "inertia-render") {
-    items.push(...getInertiaPageNames());
+    items.push(...getInertiaPageNames(currentWord));
   }
 
   return {
@@ -41,20 +43,23 @@ export const completion = (message: RequestMessage): CompletionList | null => {
   };
 };
 
-function getInertiaPageNames() {
+function getInertiaPageNames(currentWord: WordUnderCursor) {
   const items = [];
   const pagesDir = inertiaPagesDir;
 
   try {
+    const searchTerm =
+      currentWord.text.match(/Inertia::render\('([^']+)/)?.[1] || "";
+
     const firstLevelItems = fs.readdirSync(pagesDir, { withFileTypes: true });
 
     for (const item of firstLevelItems) {
       if (item.isFile() && item.name.endsWith(".vue")) {
-        // Add depth 1 .vue files
         const pagePath = item.name.replace(/\.vue$/, "");
-        items.push({ label: pagePath });
+        if (pagePath.toLowerCase().includes(searchTerm.toLowerCase())) {
+          items.push({ label: pagePath });
+        }
       } else if (item.isDirectory()) {
-        // Get second level items (depth 2)
         const secondLevelPath = path.join(pagesDir, item.name);
         const secondLevelItems = fs.readdirSync(secondLevelPath, {
           withFileTypes: true,
@@ -62,9 +67,10 @@ function getInertiaPageNames() {
 
         for (const subItem of secondLevelItems) {
           if (subItem.isFile() && subItem.name.endsWith(".vue")) {
-            // Add depth 2 .vue files with their parent directory
             const pagePath = `${item.name}/${subItem.name.replace(/\.vue$/, "")}`;
-            items.push({ label: pagePath });
+            if (pagePath.toLowerCase().includes(searchTerm.toLowerCase())) {
+              items.push({ label: pagePath });
+            }
           }
         }
       }
