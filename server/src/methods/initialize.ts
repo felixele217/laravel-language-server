@@ -1,7 +1,3 @@
-import { RequestMessage } from "../server";
-
-type ServerCapabilities = Record<string, unknown>;
-
 interface InitializeResult {
   capabilities: ServerCapabilities;
   serverInfo?: {
@@ -10,11 +6,28 @@ interface InitializeResult {
   };
 }
 
-export const initialize = (message: RequestMessage): InitializeResult => {
+interface ServerCapabilities {
+  textDocumentSync?: TextDocumentSyncOptions | TextDocumentSyncKind;
+  completionProvider?: {};
+  definitionProvider?: {};
+}
+
+export interface TextDocumentSyncOptions {
+  openClose?: boolean;
+  change?: TextDocumentSyncKind;
+}
+
+export namespace TextDocumentSyncKind {
+  export const None = 0;
+  export const Full = 1;
+  export const Incremental = 2;
+}
+export type TextDocumentSyncKind = 0 | 1 | 2;
+
+export const initialize = (): InitializeResult => {
   return {
     capabilities: {
       textDocumentSync: {
-        save: { includeText: true },
         change: 2, // incremental
         openClose: true,
       },
