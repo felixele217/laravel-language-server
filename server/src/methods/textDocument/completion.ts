@@ -23,20 +23,17 @@ export const completion = (message: RequestMessage): CompletionList | null => {
     return null;
   }
 
-  const inertiaRenderWord = currentWordIsInertiaRender(
-    params.textDocument.uri,
-    params.position,
-  );
+  const currentWord = wordUnderCursor(params.textDocument.uri, params.position);
 
-  log.write("inertiaRenderWord: " + inertiaRenderWord);
-
-  if (!inertiaRenderWord) return null;
+  if (!currentWord) return null;
 
   const items = [];
 
-  // felix TODO: get page names for completion
-  items.push({ label: "customer/Upsert" });
-  items.push({ label: "timesheet/TimesheetPage" });
+  if (currentWord.type === "inertia-render") {
+    // felix TODO: get page names for completion
+    items.push({ label: "customer/Upsert" });
+    items.push({ label: "timesheet/TimesheetPage" });
+  }
 
   return {
     isIncomplete: false,

@@ -24,16 +24,15 @@ export interface TextDocumentPositionParams {
 export const definition = (message: RequestMessage): Location | void => {
   const params = message.params as TextDocumentPositionParams;
 
-  const currentWord = currentWordIsInertiaRender(
-    params.textDocument.uri,
-    params.position,
-  );
+  const currentWord = wordUnderCursor(params.textDocument.uri, params.position);
 
-  if (!currentWord) {
-    return;
+  if (!currentWord) return;
+
+  let uri = null;
+
+  if (currentWord.type === "inertia-render") {
+    uri = getInertiaUri(currentWord);
   }
-
-  const uri = getInertiaUri(currentWord);
 
   if (!uri) {
     return;

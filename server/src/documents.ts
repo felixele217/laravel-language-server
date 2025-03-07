@@ -1,5 +1,7 @@
+import { get } from "http";
 import log from "./log";
 import { Position, Range } from "./types";
+import { currentWordIsInertiaRender } from "./utils/inertia/checkCurrentWord";
 
 export type DocumentUri = string;
 type DocumentBody = string;
@@ -22,7 +24,10 @@ export const documents = new Map<DocumentUri, DocumentBody>();
 export type WordUnderCursor = {
   text: string;
   range: Range;
+  type: WordType | null;
 };
+
+type WordType = "inertia-render" | null;
 
 export const wordUnderCursor = (
   uri: DocumentUri,
@@ -40,21 +45,35 @@ export const wordUnderCursor = (
   const start = line.lastIndexOf(" ", position.character) + 1;
   const end = line.indexOf(" ", position.character);
 
+  const text = end === -1 ? line.slice(start) : line.slice(start, end);
+
+  const type = getWordType(text);
+
   if (end === -1) {
     return {
-      text: line.slice(start),
+      text: text,
       range: {
         start: { line: position.line, character: start },
         end: { line: position.line, character: line.length },
       },
+      type: type,
+    };
+  } else {
+    return {
+      text: text,
+      range: {
+        start: { line: position.line, character: start },
+        end: { line: position.line, character: end },
+      },
+      type: type,
     };
   }
-
-  return {
-    text: line.slice(start, end),
-    range: {
-      start: { line: position.line, character: start },
-      end: { line: position.line, character: end },
-    },
-  };
 };
+
+function getWordType(word: string): WordType {
+  if (currentWordIsInertiaRender(word)) {
+    return "inertia-render";
+  }
+
+  return null;
+}
