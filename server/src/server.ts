@@ -7,7 +7,6 @@ import {
 } from "./methods/textDocument/definition";
 import { didOpen } from "./methods/textDocument/didOpen";
 import { didChange } from "./methods/textDocument/didChange";
-import { didClose } from "./methods/textDocument/didClose";
 import { didSave } from "./methods/textDocument/didSave";
 
 export interface NotificationMessage extends Message {
@@ -33,7 +32,6 @@ const methodLookup: Record<string, RequestMethod> = {
   "textDocument/definition": definition,
   "textDocument/didOpen": didOpen,
   "textDocument/didChange": didChange,
-  "textDocument/didClose": didClose,
   "textDocument/didSave": didSave,
 };
 
