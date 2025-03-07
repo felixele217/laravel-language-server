@@ -2,12 +2,6 @@ name: Type Check
 
 on:
   workflow_call:  # Add this to make the workflow reusable
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
 
 jobs:
   typecheck:
