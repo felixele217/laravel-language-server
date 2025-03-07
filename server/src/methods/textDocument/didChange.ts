@@ -26,23 +26,24 @@ export const didChange = (message: NotificationMessage) => {
 
   if (!params.contentChanges.length) return;
 
+  // this happens for textDocumentSync.change = 1 (full)
   if (!params.contentChanges[0].range) {
-    // Full update
     documents.set(uri, params.contentChanges[0].text);
-  } else {
-    // Incremental update
-    let content = documents.get(uri) || "";
-    for (const change of params.contentChanges) {
-      if (change.range) {
-        const lines = content.split("\n");
-        const start = getOffsetFromPosition(lines, change.range.start);
-        const end = getOffsetFromPosition(lines, change.range.end);
-        content =
-          content.substring(0, start) + change.text + content.substring(end);
-      }
-    }
-    documents.set(uri, content);
+
+    return;
   }
+
+  let content = documents.get(uri) || "";
+  for (const change of params.contentChanges) {
+    if (change.range) {
+      const lines = content.split("\n");
+      const start = getOffsetFromPosition(lines, change.range.start);
+      const end = getOffsetFromPosition(lines, change.range.end);
+      content =
+        content.substring(0, start) + change.text + content.substring(end);
+    }
+  }
+  documents.set(uri, content);
 };
 
 function getOffsetFromPosition(

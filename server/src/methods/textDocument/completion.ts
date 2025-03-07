@@ -1,7 +1,8 @@
 import { documents, wordUnderCursor } from "../../documents";
 import log from "../../log";
 import { RequestMessage } from "../../server";
-import { TextDocumentPositionParams } from "./definition";
+import { currentWordIsInertiaRender } from "../../utils/inertia/checkCurrentWord";
+import { getInertiaPageName, TextDocumentPositionParams } from "./definition";
 
 type CompletionItem = {
   label: string;
@@ -18,25 +19,25 @@ export const completion = (message: RequestMessage): CompletionList | null => {
   const params = message.params as CompletionParams;
   const content = documents.get(params.textDocument.uri);
 
-  log.write(`content from completion method: ${content?.slice(0, 100)}`);
-
   if (!content) {
     return null;
   }
 
-  const currentWord = wordUnderCursor(params.textDocument.uri, params.position);
-  const inertiaPages = "simon";
+  const inertiaRenderWord = currentWordIsInertiaRender(
+    params.textDocument.uri,
+    params.position,
+  );
 
-  // const currentLine = content.split("\n")[params.position.line];
-  // const lineUntilCursor = currentLine.slice(0, params.position.character);
-  // const currentPrefix = lineUntilCursor.replace(/.*[\W ](.*?)/, "$1");
+  log.write("inertiaRenderWord: " + inertiaRenderWord);
 
-  // log.write(`currentLine: ${currentLine}`);
-  // log.write(`lineUntilCursor: ${lineUntilCursor}`);
-  // log.write(`currentPrefix: ${currentPrefix}`);
+  if (!inertiaRenderWord) return null;
+
+  const items = [];
+
+  items.push({ label: "hallo es geht" });
 
   return {
     isIncomplete: false,
-    items: [{ label: inertiaPages }, { label: "lsp" }, { label: "lua" }],
+    items: items,
   };
 };
