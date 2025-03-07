@@ -60,6 +60,7 @@ describe("completion", () => {
       },
     ];
 
+    // @ts-ignore
     vi.mocked(fs.readdirSync).mockImplementation((path: string) => {
       if (path.includes("Admin")) {
         return mockSubFiles as any;
