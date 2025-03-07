@@ -20,7 +20,7 @@
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -b",
     "watch": "tsc -b -w",
-    "compile:server": "npx tsc --noEmit ./server/src/**/*.ts",
+    "compile:server": "cd server && tsc --noEmit",
     "test": "cd ./server && npm run test"
   },
   "devDependencies": {
