@@ -17,6 +17,7 @@ function getInertiaUri(currentWord: WordUnderCursor) {
   }
 
   const pageName = getInertiaPageName(currentWord);
+  console.log(path.join(inertiaPagesDir, `${pageName}.vue`));
   const filePath = path.join(inertiaPagesDir, `${pageName}.vue`);
 
   if (!fs.existsSync(filePath)) {
