@@ -1,15 +1,12 @@
 import { DocumentUri, documents } from "../../documents";
+import log from "../../log";
 import { NotificationMessage } from "../../server";
 import { Range } from "../../types";
 
-export type TextDocumentContentChangeEvent =
-  | {
-      range: Range;
-      text: string;
-    }
-  | {
-      text: string;
-    };
+export type TextDocumentContentChangeEvent = {
+  range: Range; // because in the initialize we set textDocumentSync.change to 2 (incremental)
+  text: string;
+};
 
 type TextDocumentItem = {
   uri: DocumentUri;
@@ -25,6 +22,39 @@ interface DidChangeTextDocumentParams {
 
 export const didChange = (message: NotificationMessage) => {
   const params = message.params as DidChangeTextDocumentParams;
+  const uri = params.textDocument.uri;
 
-  documents.set(params.textDocument.uri, params.textDocument.text);
+  if (!params.contentChanges.length) return;
+
+  if (!params.contentChanges[0].range) {
+    // Full update
+    documents.set(uri, params.contentChanges[0].text);
+  } else {
+    // Incremental update
+    let content = documents.get(uri) || "";
+    for (const change of params.contentChanges) {
+      if (change.range) {
+        const lines = content.split("\n");
+        const start = getOffsetFromPosition(lines, change.range.start);
+        const end = getOffsetFromPosition(lines, change.range.end);
+        content =
+          content.substring(0, start) + change.text + content.substring(end);
+      }
+    }
+    documents.set(uri, content);
+  }
 };
+
+function getOffsetFromPosition(
+  lines: string[],
+  position: { line: number; character: number },
+): number {
+  let offset = 0;
+  // Sum up lengths of all previous lines
+  for (let i = 0; i < position.line; i++) {
+    offset += lines[i].length + 1; // +1 for the newline character
+  }
+  // Add the characters in the target line
+  offset += position.character;
+  return offset;
+}

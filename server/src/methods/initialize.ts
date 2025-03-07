@@ -15,7 +15,7 @@ export const initialize = (message: RequestMessage): InitializeResult => {
     capabilities: {
       textDocumentSync: {
         save: { includeText: true },
-        change: 1, // incremental
+        change: 2, // incremental
         openClose: true,
       },
       completionProvider: {},
