@@ -178,110 +178,145 @@ describe("completion", () => {
     });
   });
 
-  it("returns completion items for blade view calls", () => {
-    // Mock document content and word under cursor
-    const uri = "file:///test.php";
-    documents.set(uri, "return view('admin.us");
+  describe("blade view calls", () => {
+    it("returns completion items for blade view calls", () => {
+      // Mock document content and word under cursor
+      const uri = "file:///test.php";
+      documents.set(uri, "return view('admin.us");
 
-    vi.spyOn(wordUnderCursor, "wordUnderCursor").mockReturnValue({
-      text: "view('admin.us",
-      range: {
-        start: { line: 0, character: 7 },
-        end: { line: 0, character: 20 },
-      },
-      type: "blade-view",
-    });
-
-    // Mock filesystem structure
-    const mockModules = [
-      vi.mocked<fs.Dirent>({
-        name: "Admin",
-        isDirectory: () => true,
-      } as fs.Dirent),
-      vi.mocked<fs.Dirent>({
-        name: "Site",
-        isDirectory: () => true,
-      } as fs.Dirent),
-    ];
-
-    const mockAdminViews = [
-      vi.mocked<fs.Dirent>({
-        name: "users.blade.php",
-        isDirectory: () => false,
-        isFile: () => true,
-      } as fs.Dirent),
-    ];
-
-    const mockSiteViews = [
-      vi.mocked<fs.Dirent>({
-        name: "timesheet/index.blade.php",
-        isDirectory: () => false,
-        isFile: () => true,
-      } as fs.Dirent),
-    ];
-
-    // Mock filesystem operations
-    vi.mocked(fs.existsSync).mockReturnValue(true);
-    vi.mocked(path.resolve).mockReturnValue("/Users/user/code/project/modules");
-
-    vi.mocked(fs.readdirSync).mockImplementation(
-      (path: fs.PathLike): fs.Dirent[] => {
-        const normalizedPath = path.toString();
-
-        if (normalizedPath.endsWith("modules")) return mockModules;
-        if (normalizedPath.endsWith("Admin/Resources/views"))
-          return mockAdminViews;
-        if (normalizedPath.endsWith("Site/Resources/views"))
-          return mockSiteViews;
-
-        return [];
-      },
-    );
-
-    vi.mocked(path.relative).mockImplementation((from, to) => {
-      const fileName = to.toString().split("/").pop();
-
-      if (fileName === "index.blade.php") return "timesheet/index";
-      if (fileName === "users.blade.php") return "users";
-      return "";
-    });
-
-    // Test completion
-    const result = completion({
-      jsonrpc: "2.0",
-      id: 1,
-      method: "textDocument/completion",
-      params: {
-        textDocument: { uri },
-        position: { line: 0, character: 15 },
-      },
-    });
-
-    // Verify results
-    expect(result).toEqual({
-      isIncomplete: false,
-      items: [
-        {
-          label: "admin::users",
-          textEdit: {
-            range: {
-              start: { line: 0, character: 13 },
-              end: { line: 0, character: 20 },
-            },
-            newText: "admin::users'",
-          },
+      vi.spyOn(wordUnderCursor, "wordUnderCursor").mockReturnValue({
+        text: "view('admin.us",
+        range: {
+          start: { line: 0, character: 7 },
+          end: { line: 0, character: 20 },
         },
-        {
-          label: "site::timesheet.index",
-          textEdit: {
-            range: {
-              start: { line: 0, character: 13 },
-              end: { line: 0, character: 20 },
-            },
-            newText: "site::timesheet.index'",
-          },
+        type: "blade-view",
+      });
+
+      // Mock filesystem structure
+      const mockModules = [
+        vi.mocked<fs.Dirent>({
+          name: "Admin",
+          isDirectory: () => true,
+        } as fs.Dirent),
+        vi.mocked<fs.Dirent>({
+          name: "Site",
+          isDirectory: () => true,
+        } as fs.Dirent),
+      ];
+
+      const mockAdminViews = [
+        vi.mocked<fs.Dirent>({
+          name: "users.blade.php",
+          isDirectory: () => false,
+          isFile: () => true,
+        } as fs.Dirent),
+      ];
+
+      const mockSiteViews = [
+        vi.mocked<fs.Dirent>({
+          name: "timesheet/index.blade.php",
+          isDirectory: () => false,
+          isFile: () => true,
+        } as fs.Dirent),
+      ];
+
+      // Mock filesystem operations
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+      vi.mocked(path.resolve).mockReturnValue(
+        "/Users/user/code/project/modules",
+      );
+
+      vi.mocked(fs.readdirSync).mockImplementation(
+        (path: fs.PathLike): fs.Dirent[] => {
+          const normalizedPath = path.toString();
+
+          if (normalizedPath.endsWith("modules")) return mockModules;
+          if (normalizedPath.endsWith("Admin/Resources/views"))
+            return mockAdminViews;
+          if (normalizedPath.endsWith("Site/Resources/views"))
+            return mockSiteViews;
+
+          return [];
         },
-      ],
+      );
+
+      vi.mocked(path.relative).mockImplementation((from, to) => {
+        const fileName = to.toString().split("/").pop();
+
+        if (fileName === "index.blade.php") return "timesheet/index";
+        if (fileName === "users.blade.php") return "users";
+        return "";
+      });
+
+      // Test completion
+      const result = completion({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "textDocument/completion",
+        params: {
+          textDocument: { uri },
+          position: { line: 0, character: 15 },
+        },
+      });
+
+      // Verify results
+      expect(result).toEqual({
+        isIncomplete: false,
+        items: [
+          {
+            label: "admin::users",
+            textEdit: {
+              range: {
+                start: { line: 0, character: 13 },
+                end: { line: 0, character: 20 },
+              },
+              newText: "admin::users'",
+            },
+          },
+          {
+            label: "site::timesheet.index",
+            textEdit: {
+              range: {
+                start: { line: 0, character: 13 },
+                end: { line: 0, character: 20 },
+              },
+              newText: "site::timesheet.index'",
+            },
+          },
+        ],
+      });
+    });
+
+    it("returns empty array when modules directory doesn't exist", () => {
+      const uri = "file:///test.php";
+      documents.set(uri, "return view('admin.us");
+
+      vi.spyOn(wordUnderCursor, "wordUnderCursor").mockReturnValue({
+        text: "view('admin.us",
+        range: {
+          start: { line: 0, character: 7 },
+          end: { line: 0, character: 20 },
+        },
+        type: "blade-view",
+      });
+
+      vi.mocked(fs.existsSync).mockReturnValue(false);
+
+      const result = completion({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "textDocument/completion",
+        params: {
+          textDocument: { uri },
+          position: { line: 0, character: 15 },
+        },
+      });
+
+      expect(result).toEqual({
+        isIncomplete: false,
+        items: [],
+      });
     });
   });
 });
