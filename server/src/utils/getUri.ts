@@ -18,7 +18,11 @@ export function getUri(currentWord: WordUnderCursor) {
 function getBladeUri(currentWord: WordUnderCursor) {
   const viewIdentifier = getSingleQuoteString(currentWord);
 
-  if (viewIdentifier && viewIdentifier.includes("::")) {
+  if (!viewIdentifier) return;
+
+  // view('components.layout.superadmin-navigation');
+  // should return file:///${cwd}/resources/views/components/layout/superadmin-navigation.blade.php
+  if (viewIdentifier.includes("::")) {
     const [module, viewPath] = viewIdentifier.split("::");
 
     const moduleName = module.charAt(0).toUpperCase() + module.slice(1);
@@ -40,6 +44,20 @@ function getBladeUri(currentWord: WordUnderCursor) {
 
     return `file://${fullPath}`.replace(/\\/g, "/");
   }
+
+  const viewFilePath = viewIdentifier.split(".").join("/");
+
+  const fullPath = path.join(
+    process.cwd(),
+    "resources",
+    "views",
+    viewFilePath + ".blade.php",
+  );
+  if (!fs.existsSync(fullPath)) {
+    return;
+  }
+
+  return `file://${fullPath}`.replace(/\\/g, "/");
 }
 
 function getInertiaUri(currentWord: WordUnderCursor) {
