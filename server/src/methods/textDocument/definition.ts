@@ -23,6 +23,8 @@ export const definition = (message: RequestMessage): Location | void => {
   const params = message.params as TextDocumentPositionParams;
 
   const currentWord = wordUnderCursor(params.textDocument.uri, params.position);
+  log.write("currentWord :");
+  log.write(currentWord?.text);
 
   if (!currentWord || currentWord.type === null) return;
 

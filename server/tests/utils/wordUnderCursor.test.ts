@@ -51,6 +51,23 @@ describe("wordUnderCursor", () => {
     });
   });
 
+  it("view(' words are of type blade-view", () => {
+    const content = "return view('site::dashboard', ";
+    documents.set(mockUri, content);
+
+    const position: Position = { line: 0, character: 15 };
+    const result = wordUnderCursor(mockUri, position);
+
+    expect(result).toEqual({
+      text: "view('site::dashboard',",
+      range: {
+        start: { line: 0, character: 7 },
+        end: { line: 0, character: 30 },
+      },
+      type: "blade-view",
+    });
+  });
+
   it("returns null type for non-Inertia words", () => {
     const content = "return something";
     documents.set(mockUri, content);

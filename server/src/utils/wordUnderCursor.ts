@@ -8,7 +8,7 @@ export type WordUnderCursor = {
   type: WordType;
 };
 
-type WordType = "inertia-render" | null;
+type WordType = "inertia-render" | "blade-view" | null;
 
 export const wordUnderCursor = (
   uri: DocumentUri,
@@ -54,6 +54,10 @@ export const wordUnderCursor = (
 function getWordType(word: string): WordType {
   if (word?.includes("Inertia::render")) {
     return "inertia-render";
+  }
+
+  if (word?.includes("view(")) {
+    return "blade-view";
   }
 
   return null;
