@@ -368,4 +368,137 @@ describe("completion", () => {
       });
     });
   });
+
+  it("returns both module and default views when no :: is present", () => {
+    // Mock document content and word under cursor
+    const uri = "file:///test.php";
+    documents.set(uri, "return view('users");
+
+    vi.spyOn(wordUnderCursor, "wordUnderCursor").mockReturnValue({
+      text: "view('users",
+      range: {
+        start: { line: 0, character: 7 },
+        end: { line: 0, character: 20 },
+      },
+      type: "blade-view",
+    });
+
+    // Mock filesystem structure
+    const mockModules = [
+      vi.mocked<fs.Dirent>({
+        name: "Admin",
+        isDirectory: () => true,
+      } as fs.Dirent),
+      vi.mocked<fs.Dirent>({
+        name: "Site",
+        isDirectory: () => true,
+      } as fs.Dirent),
+    ];
+
+    const mockAdminViews = [
+      vi.mocked<fs.Dirent>({
+        name: "users/list.blade.php",
+        isDirectory: () => false,
+        isFile: () => true,
+      } as fs.Dirent),
+    ];
+
+    const mockSiteViews = [
+      vi.mocked<fs.Dirent>({
+        name: "users/index.blade.php",
+        isDirectory: () => false,
+        isFile: () => true,
+      } as fs.Dirent),
+    ];
+
+    const mockDefaultViews = [
+      vi.mocked<fs.Dirent>({
+        name: "users/create.blade.php",
+        isDirectory: () => false,
+        isFile: () => true,
+      } as fs.Dirent),
+    ];
+
+    // Mock filesystem operations
+    vi.mocked(fs.existsSync).mockReturnValue(true);
+
+    vi.mocked(path.resolve).mockImplementation((...args) => {
+      if (args.includes("modules")) {
+        return "/Users/user/code/project/modules";
+      }
+      return "/Users/user/code/project/resources/views";
+    });
+
+    vi.mocked(fs.readdirSync).mockImplementation(
+      (path: fs.PathLike): fs.Dirent[] => {
+        const normalizedPath = path.toString();
+
+        if (normalizedPath.endsWith("modules")) return mockModules;
+        if (normalizedPath.endsWith("Admin/Resources/views"))
+          return mockAdminViews;
+        if (normalizedPath.endsWith("Site/Resources/views"))
+          return mockSiteViews;
+        if (normalizedPath.endsWith("resources/views")) return mockDefaultViews;
+
+        return [];
+      },
+    );
+
+    vi.mocked(path.relative).mockImplementation((from, to) => {
+      const fileName = to.toString();
+
+      if (fileName.includes("list.blade.php")) return "users/list";
+      if (fileName.includes("index.blade.php")) return "users/index";
+      if (fileName.includes("create.blade.php")) return "users/create";
+      return "";
+    });
+
+    // Test completion
+    const result = completion({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "textDocument/completion",
+      params: {
+        textDocument: { uri },
+        position: { line: 0, character: 15 },
+      },
+    });
+
+    // Verify results
+    expect(result).toEqual({
+      isIncomplete: false,
+      items: [
+        {
+          label: "admin::users.list",
+          textEdit: {
+            range: {
+              start: { line: 0, character: 13 },
+              end: { line: 0, character: 20 },
+            },
+            newText: "admin::users.list'",
+          },
+        },
+        {
+          label: "site::users.index",
+          textEdit: {
+            range: {
+              start: { line: 0, character: 13 },
+              end: { line: 0, character: 20 },
+            },
+            newText: "site::users.index'",
+          },
+        },
+        {
+          label: "users.create",
+          textEdit: {
+            range: {
+              start: { line: 0, character: 13 },
+              end: { line: 0, character: 20 },
+            },
+            newText: "users.create'",
+          },
+        },
+      ],
+    });
+  });
 });
