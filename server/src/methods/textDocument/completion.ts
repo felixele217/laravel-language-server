@@ -52,8 +52,6 @@ function getBladeViewNames(currentWord: Word) {
   const modulesDir = path.resolve(process.cwd(), "modules");
 
   try {
-    const searchTerm = currentWord.text.match(/view\(['"]([^'"]+)/)?.[1] || "";
-
     if (!fs.existsSync(modulesDir)) {
       return items;
     }
@@ -84,13 +82,9 @@ function getBladeViewNames(currentWord: Word) {
 
         const fullViewPath = `${moduleDir.name.toLowerCase()}::${normalizedPath}`;
 
-        if (fullViewPath.toLowerCase().includes(searchTerm.toLowerCase())) {
-          items.push({
-            label: fullViewPath,
-            // kind: CompletionItemKind.File,
-            // detail: `Blade View: ${fullViewPath}`,
-          });
-        }
+        items.push({
+          label: fullViewPath,
+        });
       }
     }
   } catch (error) {
