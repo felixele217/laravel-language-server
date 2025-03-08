@@ -8,7 +8,7 @@ import { TextDocumentPositionParams } from "./definition";
 import { getBladeCompletionItems } from "../../utils/completion/getBladeCompletionItems";
 import * as fs from "fs";
 import * as path from "path";
-import { getInertiaPageNames } from "../../utils/completion/getInertiaCompletionItems";
+import { getInertiaCompletionItems } from "../../utils/completion/getInertiaCompletionItems";
 
 export type CompletionItem = {
   label: string;
@@ -52,7 +52,7 @@ function getValidCurrentWord(message: RequestMessage): Word | null {
 
 function getCompletionItems(currentWord: Word): CompletionItem[] {
   if (currentWord.type === "inertia-render") {
-    return getInertiaPageNames(currentWord);
+    return getInertiaCompletionItems(currentWord);
   }
   if (currentWord.type === "blade-view") {
     return getBladeCompletionItems(currentWord);

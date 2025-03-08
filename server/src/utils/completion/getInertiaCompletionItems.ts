@@ -1,17 +1,19 @@
-import path = require("path");
-import fs = require("fs");
-
+import * as fs from "fs";
+import * as path from "path";
 import { CompletionItem } from "../../methods/textDocument/completion";
 import { Word } from "../Word";
 import { inertiaPagesDir } from "../../config";
 
-export function getInertiaPageNames(currentWord: Word): CompletionItem[] {
+export function getInertiaCompletionItems(currentWord: Word): CompletionItem[] {
   const items: CompletionItem[] = [];
   try {
     const searchTerm = extractInertiaSearchTerm(currentWord.text);
     const pagesDir = inertiaPagesDir;
 
-    if (!fs.existsSync(pagesDir)) return items;
+    console.log(fs.existsSync(pagesDir));
+    if (fs.existsSync(pagesDir)) {
+      return items;
+    }
 
     const firstLevelItems = fs.readdirSync(pagesDir, { withFileTypes: true });
     return [
