@@ -10,7 +10,7 @@ vi.mock("../config", () => ({
   inertiaPagesDir: "/fake/path",
 }));
 
-describe("getUri inertia views", () => {
+describe("getInertiaUri", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -73,7 +73,7 @@ describe("getUri inertia views", () => {
   });
 });
 
-describe("getUri blade views", () => {
+describe("getBladeUri", () => {
   beforeEach(() => {
     vi.resetModules();
     vi.mock("path");
@@ -82,7 +82,7 @@ describe("getUri blade views", () => {
   });
 
   it("returns file URI for existing simple view", () => {
-    const mockWord = {
+    const mockWord: WordUnderCursor = {
       text: "view('dashboard')",
       range: {
         start: { line: 0, character: 0 },
@@ -102,7 +102,7 @@ describe("getUri blade views", () => {
   });
 
   it("returns file URI for existing nested view", () => {
-    const mockWord = {
+    const mockWord: WordUnderCursor = {
       text: "view('components.layout.navigation')",
       range: {
         start: { line: 0, character: 0 },
@@ -122,7 +122,7 @@ describe("getUri blade views", () => {
   });
 
   it("returns undefined when file does not exist", () => {
-    const mockWord = {
+    const mockWord: WordUnderCursor = {
       text: "view('non-existent-view')",
       range: {
         start: { line: 0, character: 0 },
@@ -140,7 +140,7 @@ describe("getUri blade views", () => {
   });
 
   it("handles deeply nested view paths", () => {
-    const mockWord = {
+    const mockWord: WordUnderCursor = {
       text: "view('admin.users.profile.settings')",
       range: {
         start: { line: 0, character: 0 },
@@ -160,7 +160,7 @@ describe("getUri blade views", () => {
   });
 
   it("handles windows-style paths", () => {
-    const mockWord = {
+    const mockWord: WordUnderCursor = {
       text: "view('components.layout')",
       range: {
         start: { line: 0, character: 0 },
@@ -180,7 +180,7 @@ describe("getUri blade views", () => {
   });
 
   it("returns undefined when view identifier is missing", () => {
-    const mockWord = {
+    const mockWord: WordUnderCursor = {
       text: "view('')",
       range: {
         start: { line: 0, character: 0 },
