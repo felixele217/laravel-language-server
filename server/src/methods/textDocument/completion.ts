@@ -57,8 +57,7 @@ export const completion = (message: RequestMessage): CompletionList | null => {
 function getBladeViewNames(currentWord: Word) {
   const items: CompletionItem[] = [];
   const modulesDir = path.resolve(process.cwd(), "modules");
-
-  try {
+  modulesDir: try {
     if (!fs.existsSync(modulesDir)) {
       return items;
     }
@@ -92,6 +91,7 @@ function getBladeViewNames(currentWord: Word) {
 
       const bladeFiles = getAllBladeFiles(viewsPath);
 
+      console.log("hallo full view");
       for (const file of bladeFiles) {
         const normalizedPath = path
           .relative(viewsPath, file)
@@ -100,6 +100,8 @@ function getBladeViewNames(currentWord: Word) {
           .join(".");
 
         const fullViewPath = `${moduleDir.name.toLowerCase()}::${normalizedPath}`;
+        log.write("fullViewPath: " + fullViewPath);
+        console.log(fullViewPath);
 
         items.push({
           label: fullViewPath,
