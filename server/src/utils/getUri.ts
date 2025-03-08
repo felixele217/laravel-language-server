@@ -14,11 +14,9 @@ export function getUri(currentWord: WordUnderCursor) {
   }
 }
 
+// felix TODO: test
 function getBladeUri(currentWord: WordUnderCursor) {
   const viewIdentifier = getSingleQuoteString(currentWord);
-  // "stripebilling::modex.index" => "modules/StripeBilling/Resources/views/modex/index.blade.php"
-  // "stripebilling::mode.test.index" => "modules/StripeBilling/Resources/views/modex//test/index.blade.php"
-  // can you do that?
 
   if (viewIdentifier && viewIdentifier.includes("::")) {
     const [module, viewPath] = viewIdentifier.split("::");
@@ -46,6 +44,11 @@ function getBladeUri(currentWord: WordUnderCursor) {
 
 function getInertiaUri(currentWord: WordUnderCursor) {
   const pageName = getSingleQuoteString(currentWord);
+
+  if (!pageName) {
+    return;
+  }
+
   const filePath = path.join(inertiaPagesDir, `${pageName}.vue`);
 
   if (!fs.existsSync(filePath)) {

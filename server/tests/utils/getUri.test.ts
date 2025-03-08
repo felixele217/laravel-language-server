@@ -53,6 +53,7 @@ describe("getUri", () => {
         end: { line: 0, character: 7 },
       },
     };
+    console.log("hallo from fail test" + JSON.stringify(word));
 
     expect(getUri(word)).toBeUndefined();
   });
