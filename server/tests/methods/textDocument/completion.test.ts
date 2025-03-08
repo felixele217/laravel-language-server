@@ -179,12 +179,10 @@ describe("completion", () => {
   });
 
   it("returns completion items for blade view calls", () => {
-    // Mock document content
+    // Mock document content and word under cursor
     const uri = "file:///test.php";
-    const content = "return view('admin.us";
-    documents.set(uri, content);
+    documents.set(uri, "return view('admin.us");
 
-    // Mock word under cursor
     vi.spyOn(wordUnderCursor, "wordUnderCursor").mockReturnValue({
       text: "view('admin.us",
       range: {
@@ -194,13 +192,7 @@ describe("completion", () => {
       type: "blade-view",
     });
 
-    // Mock filesystem
-
-    vi.mocked(fs.existsSync).mockImplementation(() => true);
-    vi.mocked(path.resolve).mockImplementation(
-      () => "/Users/user/code/project/modules",
-    );
-
+    // Mock filesystem structure
     const mockModules = [
       vi.mocked<fs.Dirent>({
         name: "Admin",
@@ -218,6 +210,9 @@ describe("completion", () => {
         isDirectory: () => false,
         isFile: () => true,
       } as fs.Dirent),
+    ];
+
+    const mockSiteViews = [
       vi.mocked<fs.Dirent>({
         name: "timesheet/index.blade.php",
         isDirectory: () => false,
@@ -225,60 +220,34 @@ describe("completion", () => {
       } as fs.Dirent),
     ];
 
-    const mockUserViews = [
-      vi.mocked<fs.Dirent>({
-        name: "times/index.blade.php",
-        isDirectory: () => false,
-        isFile: () => true,
-      } as fs.Dirent),
-    ];
-
-    vi.mocked(fs.existsSync).mockImplementation(() => true);
+    // Mock filesystem operations
+    vi.mocked(fs.existsSync).mockReturnValue(true);
+    vi.mocked(path.resolve).mockReturnValue("/Users/user/code/project/modules");
 
     vi.mocked(fs.readdirSync).mockImplementation(
-      (
-        path: fs.PathLike,
-        options: fs.ObjectEncodingOptions & {
-          withFileTypes: true;
-          recursive?: boolean | undefined;
-        },
-      ): fs.Dirent[] => {
-        // Add debug logging
-
-        // Normalize path to prevent recursive matches
+      (path: fs.PathLike): fs.Dirent[] => {
         const normalizedPath = path.toString();
 
-        // Use more specific path matching
-        if (normalizedPath.endsWith("modules")) {
-          return mockModules;
-        }
-        if (normalizedPath.endsWith("Admin/Resources/views")) {
+        if (normalizedPath.endsWith("modules")) return mockModules;
+        if (normalizedPath.endsWith("Admin/Resources/views"))
           return mockAdminViews;
-        }
-        if (normalizedPath.endsWith("users")) {
-          return mockUserViews;
-        }
+        if (normalizedPath.endsWith("Site/Resources/views"))
+          return mockSiteViews;
 
-        console.log("No match found for path:", normalizedPath);
         return [];
       },
     );
 
     vi.mocked(path.relative).mockImplementation((from, to) => {
-      // Extract the file name from the full path
-      const parts = to.toString().split("/");
-      const fileName = parts[parts.length - 1];
+      const fileName = to.toString().split("/").pop();
 
-      if (fileName === "index.blade.php") {
-        return "timesheet/index";
-      }
-      if (fileName === "users.blade.php") {
-        return "users";
-      }
+      if (fileName === "index.blade.php") return "timesheet/index";
+      if (fileName === "users.blade.php") return "users";
       return "";
     });
 
-    const message = {
+    // Test completion
+    const result = completion({
       jsonrpc: "2.0",
       id: 1,
       method: "textDocument/completion",
@@ -286,10 +255,9 @@ describe("completion", () => {
         textDocument: { uri },
         position: { line: 0, character: 15 },
       },
-    };
+    });
 
-    const result = completion(message);
-
+    // Verify results
     expect(result).toEqual({
       isIncomplete: false,
       items: [
@@ -304,13 +272,13 @@ describe("completion", () => {
           },
         },
         {
-          label: "admin::timesheet.index",
+          label: "site::timesheet.index",
           textEdit: {
             range: {
               start: { line: 0, character: 13 },
               end: { line: 0, character: 20 },
             },
-            newText: "admin::timesheet.index'",
+            newText: "site::timesheet.index'",
           },
         },
       ],
