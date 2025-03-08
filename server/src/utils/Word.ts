@@ -14,41 +14,52 @@ export const wordUnderCursor = (
   position: Position,
 ): Word | null => {
   const document = documents.get(uri);
-
-  if (!document) {
-    return null;
-  }
+  if (!document) return null;
 
   const lines = document.split("\n");
   const line = lines[position.line];
 
-  const start = line.lastIndexOf(" ", position.character) + 1;
-  const end = line.indexOf(" ", position.character);
+  const wordBoundaries = findWordBoundaries(line, position.character);
+  if (!wordBoundaries) return null;
 
-  const text = end === -1 ? line.slice(start) : line.slice(start, end);
+  const { start, end } = wordBoundaries;
+  const text = line.slice(start, end);
 
-  const type = getWordType(text);
-
-  if (end === -1) {
-    return {
-      text: text,
-      range: {
-        start: { line: position.line, character: start },
-        end: { line: position.line, character: line.length },
-      },
-      type: type,
-    };
-  } else {
-    return {
-      text: text,
-      range: {
-        start: { line: position.line, character: start },
-        end: { line: position.line, character: end },
-      },
-      type: type,
-    };
-  }
+  return {
+    text,
+    range: createRange(position.line, start, end),
+    type: getWordType(text),
+  };
 };
+
+interface WordBoundaries {
+  start: number;
+  end: number;
+}
+
+function findWordBoundaries(
+  line: string,
+  cursorPosition: number,
+): WordBoundaries | null {
+  const start = line.lastIndexOf(" ", cursorPosition) + 1;
+  const end = line.indexOf(" ", cursorPosition);
+
+  return {
+    start,
+    end: end === -1 ? line.length : end,
+  };
+}
+
+function createRange(
+  lineNumber: number,
+  startChar: number,
+  endChar: number,
+): Range {
+  return {
+    start: { line: lineNumber, character: startChar },
+    end: { line: lineNumber, character: endChar },
+  };
+}
 
 function getWordType(word: string): WordType {
   if (word?.includes("Inertia::render")) {
