@@ -1,8 +1,8 @@
-import path = require("path");
-import fs = require("fs");
-
+import * as fs from "fs";
+import * as path from "path";
 import { CompletionItem } from "../../methods/textDocument/completion";
 import { Word } from "../Word";
+import { log } from "console";
 
 export function getBladeCompletionItems(currentWord: Word): CompletionItem[] {
   const items: CompletionItem[] = [];
@@ -20,6 +20,7 @@ export function getBladeCompletionItems(currentWord: Word): CompletionItem[] {
     const defaultViewsDir = path.resolve(process.cwd(), "resources", "views");
     if (!fs.existsSync(defaultViewsDir)) return items;
 
+    console.log("hallo from here");
     items.push(...getAllModuleViews(modulesDir));
     items.push(...getDefaultViews(defaultViewsDir));
 
@@ -45,6 +46,10 @@ function getAllModuleViews(modulesDir: string): CompletionItem[] {
   const modules = fs
     .readdirSync(modulesDir, { withFileTypes: true })
     .filter((dirent) => dirent.isDirectory());
+  console.log(
+    "viewsPath" +
+      JSON.stringify(fs.readdirSync(modulesDir, { withFileTypes: true })),
+  );
 
   for (const moduleDir of modules) {
     const viewsPath = path.join(
@@ -84,7 +89,9 @@ function normalizeViewPath(file: string, viewsPath: string): string {
 }
 
 function getAllBladeFiles(dir: string): string[] {
+  console.log("hallo penis" + dir);
   const items = fs.readdirSync(dir, { withFileTypes: true });
+  console.log("hallo nicht");
   return items.reduce<string[]>((results, item) => {
     const fullPath = path.join(dir, item.name);
     if (item.isDirectory()) {

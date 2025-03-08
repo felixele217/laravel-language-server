@@ -1,97 +1,113 @@
-import path from "path";
-import fs from "fs";
-import { CompletionItem } from "../../methods/textDocument/completion";
-import { Word } from "../Word";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { completion } from "../../../src/methods/textDocument/completion";
+import { documents } from "../../../src/documents";
+import * as fs from "fs";
+import * as path from "path";
+import * as wordUnderCursor from "../../../src/utils/Word";
+import log from "../../../src/log";
+import { getBladeCompletionItems } from "../../../src/utils/completion/getBladeCompletionItems";
 
-export function getBladeViewNames(currentWord: Word): CompletionItem[] {
-  const items: CompletionItem[] = [];
-  try {
-    const modulesDir = path.resolve(process.cwd(), "modules");
-    // Check if we're looking for module views
-    if (currentWord.text.includes("::")) {
-      if (fs.existsSync(modulesDir)) {
-        return getAllModuleViews(modulesDir);
+describe("blade view calls", () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    vi.resetModules();
+    vi.mock("fs");
+    vi.mock("path");
+    vi.mock("../../../src/log", () => ({
+      default: { write: vi.fn() },
+    }));
+    documents.clear();
+  });
+
+  it("returns completion items for blade view calls", () => {
+    // Mock document content and word under cursor
+    const uri = "file:///test.php";
+    documents.set(uri, "return view('admin::us"); // Added :: to indicate module view
+
+    vi.spyOn(wordUnderCursor, "wordUnderCursor").mockReturnValue({
+      text: "view('admin::us", // Added :: to indicate module view
+      range: {
+        start: { line: 0, character: 7 },
+        end: { line: 0, character: 20 },
+      },
+      type: "blade-view",
+    });
+
+    // Mock filesystem structure
+    const mockModules = [
+      vi.mocked<fs.Dirent>({
+        name: "Admin",
+        isDirectory: () => true,
+      } as fs.Dirent),
+      vi.mocked<fs.Dirent>({
+        name: "Site",
+        isDirectory: () => true,
+      } as fs.Dirent),
+    ];
+
+    const mockAdminViews = [
+      vi.mocked<fs.Dirent>({
+        name: "users.blade.php",
+        isDirectory: () => false,
+        isFile: () => true,
+      } as fs.Dirent),
+    ];
+
+    const mockSiteViews = [
+      vi.mocked<fs.Dirent>({
+        name: "timesheet/index.blade.php",
+        isDirectory: () => false,
+        isFile: () => true,
+      } as fs.Dirent),
+    ];
+
+    // Mock filesystem operations
+    vi.mocked(fs.existsSync).mockReturnValue(true);
+    vi.mocked(path.resolve).mockImplementation((...args) => {
+      if (args.includes("modules")) {
+        return "/Users/user/code/project/Modules";
       }
-      return items;
-    }
+      return "/Users/user/code/project/resources/views";
+    });
 
-    // Handle default views from resources/views
-    const defaultViewsDir = path.resolve(process.cwd(), "resources", "views");
-    if (!fs.existsSync(defaultViewsDir)) return items;
+    vi.mocked(fs.readdirSync).mockImplementation(
+      (path: fs.PathLike): fs.Dirent[] => {
+        const normalizedPath = path.toString();
+        console.log("normalizedPath", normalizedPath);
 
-    items.push(...getAllModuleViews(modulesDir));
-    items.push(...getDefaultViews(defaultViewsDir));
+        if (normalizedPath.endsWith("Modules")) return mockModules;
+        if (normalizedPath.endsWith("Admin/Resources/views"))
+          return mockAdminViews;
+        if (normalizedPath.endsWith("Site/Resources/views"))
+          return mockSiteViews;
 
-    return items;
-  } catch (error) {
-    console.error("Failed to read blade views:", error);
-    return items;
-  }
-}
-
-function getDefaultViews(viewsDir: string): CompletionItem[] {
-  const bladeFiles = getAllBladeFiles(viewsDir);
-
-  return bladeFiles.map((file) => {
-    const normalizedPath = normalizeViewPath(file, viewsDir);
-
-    return { label: normalizedPath };
-  });
-}
-
-function getAllModuleViews(modulesDir: string): CompletionItem[] {
-  const items: CompletionItem[] = [];
-  const modules = fs
-    .readdirSync(modulesDir, { withFileTypes: true })
-    .filter((dirent) => dirent.isDirectory());
-
-  for (const moduleDir of modules) {
-    const viewsPath = path.join(
-      modulesDir,
-      moduleDir.name,
-      "Resources",
-      "views",
+        return [];
+      },
     );
-    if (!fs.existsSync(viewsPath)) continue;
 
-    const bladeFiles = getAllBladeFiles(viewsPath);
-    items.push(...createCompletionItems(bladeFiles, viewsPath, moduleDir.name));
-  }
+    vi.mocked(path.relative).mockImplementation((from, to) => {
+      const fileName = to.toString().split("/").pop();
 
-  return items;
-}
+      if (fileName === "index.blade.php") return "timesheet/index";
+      if (fileName === "users.blade.php") return "users";
+      return "";
+    });
 
-function createCompletionItems(
-  files: string[],
-  viewsPath: string,
-  moduleName: string,
-): CompletionItem[] {
-  return files.map((file) => {
-    const normalizedPath = normalizeViewPath(file, viewsPath);
-    const fullViewPath = `${moduleName.toLowerCase()}::${normalizedPath}`;
+    // Test completion
+    const result = completion({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "textDocument/completion",
+      params: {
+        textDocument: { uri },
+        position: { line: 0, character: 15 },
+      },
+    });
 
-    return { label: fullViewPath };
+    // Verify results
+    expect(result).toEqual({
+      isIncomplete: false,
+      items: [{ label: "admin::users" }, { label: "site::timesheet.index" }],
+    });
   });
-}
-
-function normalizeViewPath(file: string, viewsPath: string): string {
-  return path
-    .relative(viewsPath, file)
-    .replace(/\.blade\.php$/, "")
-    .split(path.sep)
-    .join(".");
-}
-
-function getAllBladeFiles(dir: string): string[] {
-  const items = fs.readdirSync(dir, { withFileTypes: true });
-  return items.reduce<string[]>((results, item) => {
-    const fullPath = path.join(dir, item.name);
-    if (item.isDirectory()) {
-      return results.concat(getAllBladeFiles(fullPath));
-    }
-    if (item.isFile() && item.name.endsWith(".blade.php")) {
-      results.push(fullPath);
-    }
-    return results;
-  }, []);
-}
+});
