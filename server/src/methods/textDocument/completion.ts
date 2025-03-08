@@ -2,14 +2,23 @@ import { inertiaPagesDir } from "../../config";
 import { documents } from "../../documents";
 import log from "../../log";
 import { RequestMessage } from "../../server";
+import { Range } from "../../types";
 import { Word, wordUnderCursor } from "../../utils/Word";
 import { TextDocumentPositionParams } from "./definition";
+import { getBladeCompletionItems } from "../../utils/completion/getBladeCompletionItems";
 import * as fs from "fs";
 import * as path from "path";
+import { getInertiaCompletionItems } from "../../utils/completion/getInertiaCompletionItems";
 
-type CompletionItem = {
+export type CompletionItem = {
   label: string;
+  textEdit?: TextEdit;
 };
+
+interface TextEdit {
+  range: Range;
+  newText: string;
+}
 
 export interface CompletionList {
   isIncomplete: boolean;
@@ -17,70 +26,36 @@ export interface CompletionList {
 }
 
 export interface CompletionParams extends TextDocumentPositionParams {}
-
 export const completion = (message: RequestMessage): CompletionList | null => {
-  const params = message.params as CompletionParams;
-  const content = documents.get(params.textDocument.uri);
-
-  if (!content) {
-    return null;
-  }
-
-  const currentWord = wordUnderCursor(params.textDocument.uri, params.position);
-
+  const currentWord = getValidCurrentWord(message);
   if (!currentWord) return null;
-  log.write("currentWord: " + currentWord.text);
 
-  const items = [];
-
-  if (currentWord.type === "inertia-render") {
-    items.push(...getInertiaPageNames(currentWord));
-  }
+  const items = getCompletionItems(currentWord);
 
   return {
     isIncomplete: false,
-    items: items,
+    items,
   };
 };
 
-function getInertiaPageNames(currentWord: Word) {
-  const items = [];
-  const pagesDir = inertiaPagesDir;
+function getValidCurrentWord(message: RequestMessage): Word | null {
+  const params = message.params as CompletionParams;
+  const content = documents.get(params.textDocument.uri);
+  if (!content) return null;
 
-  try {
-    const searchTerm =
-      currentWord.text.match(/Inertia::render\('([^']+)/)?.[1] || "";
+  const word = wordUnderCursor(params.textDocument.uri, params.position);
+  if (!word) return null;
 
-    const firstLevelItems = fs.readdirSync(pagesDir, { withFileTypes: true });
+  log.write("currentWord: " + word.text);
+  return word;
+}
 
-    for (const item of firstLevelItems) {
-      if (item.isFile() && item.name.endsWith(".vue")) {
-        const pagePath = item.name.replace(/\.vue$/, "");
-        if (pagePath.toLowerCase().includes(searchTerm.toLowerCase())) {
-          items.push({ label: pagePath });
-        }
-      } else if (item.isDirectory()) {
-        const secondLevelPath = path.join(pagesDir, item.name);
-        const secondLevelItems = fs.readdirSync(secondLevelPath, {
-          withFileTypes: true,
-        });
-
-        for (const subItem of secondLevelItems) {
-          if (subItem.isFile() && subItem.name.endsWith(".vue")) {
-            const pagePath = `${item.name}/${subItem.name.replace(
-              /\.vue$/,
-              "",
-            )}`;
-            if (pagePath.toLowerCase().includes(searchTerm.toLowerCase())) {
-              items.push({ label: pagePath });
-            }
-          }
-        }
-      }
-    }
-  } catch (error) {
-    console.error("Failed to read Inertia pages directory:", error);
+function getCompletionItems(currentWord: Word): CompletionItem[] {
+  if (currentWord.type === "inertia-render") {
+    return getInertiaCompletionItems(currentWord);
   }
-
-  return items;
+  if (currentWord.type === "blade-view") {
+    return getBladeCompletionItems(currentWord);
+  }
+  return [];
 }
