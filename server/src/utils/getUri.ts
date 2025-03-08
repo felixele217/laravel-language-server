@@ -14,7 +14,6 @@ export function getUri(currentWord: WordUnderCursor) {
   }
 }
 
-// felix TODO: test
 function getBladeUri(currentWord: WordUnderCursor) {
   const viewIdentifier = getSingleQuoteString(currentWord);
 
