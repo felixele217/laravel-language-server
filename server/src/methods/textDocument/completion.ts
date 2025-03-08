@@ -31,10 +31,14 @@ export const completion = (message: RequestMessage): CompletionList | null => {
   if (!currentWord) return null;
   log.write("currentWord: " + currentWord.text);
 
-  const items = [];
+  const items: CompletionItem[] = [];
 
   if (currentWord.type === "inertia-render") {
     items.push(...getInertiaPageNames(currentWord));
+  }
+
+  if (currentWord.type === "blade-view") {
+    items.push(...getBladeViewNames(currentWord));
   }
 
   return {
@@ -42,6 +46,77 @@ export const completion = (message: RequestMessage): CompletionList | null => {
     items: items,
   };
 };
+
+function getBladeViewNames(currentWord: Word) {
+  const items: CompletionItem[] = [];
+  const modulesDir = path.resolve(process.cwd(), "modules");
+
+  try {
+    const searchTerm = currentWord.text.match(/view\(['"]([^'"]+)/)?.[1] || "";
+
+    if (!fs.existsSync(modulesDir)) {
+      return items;
+    }
+
+    const modules = fs
+      .readdirSync(modulesDir, { withFileTypes: true })
+      .filter((dirent) => dirent.isDirectory());
+
+    for (const moduleDir of modules) {
+      const viewsPath = path.join(
+        modulesDir,
+        moduleDir.name,
+        "Resources",
+        "views",
+      );
+
+      if (!fs.existsSync(viewsPath)) continue;
+
+      const bladeFiles = getAllBladeFiles(viewsPath);
+
+      for (const file of bladeFiles) {
+        // Normalize the path to prevent double module names
+        const normalizedPath = path
+          .relative(viewsPath, file)
+          .replace(/\.blade\.php$/, "")
+          .split(path.sep)
+          .join(".");
+
+        const fullViewPath = `${moduleDir.name.toLowerCase()}::${normalizedPath}`;
+
+        if (fullViewPath.toLowerCase().includes(searchTerm.toLowerCase())) {
+          items.push({
+            label: fullViewPath,
+            // kind: CompletionItemKind.File,
+            // detail: `Blade View: ${fullViewPath}`,
+          });
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Failed to read blade views:", error);
+  }
+
+  return items;
+}
+
+function getAllBladeFiles(dir: string): string[] {
+  let results: string[] = [];
+
+  const items = fs.readdirSync(dir, { withFileTypes: true });
+
+  for (const item of items) {
+    const fullPath = path.join(dir, item.name);
+
+    if (item.isDirectory()) {
+      results = results.concat(getAllBladeFiles(fullPath));
+    } else if (item.isFile() && item.name.endsWith(".blade.php")) {
+      results.push(fullPath);
+    }
+  }
+
+  return results;
+}
 
 function getInertiaPageNames(currentWord: Word) {
   const items = [];
