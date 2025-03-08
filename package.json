@@ -21,7 +21,8 @@
     "compile": "tsc -b",
     "watch": "tsc -b -w",
     "compile:server": "cd server && tsc --noEmit",
-    "test": "cd ./server && npm run test"
+    "test": "cd ./server && npm run test",
+    "check": "npm run compile:server && npm run test"
   },
   "devDependencies": {
     "@types/node": "^20.5.7",
