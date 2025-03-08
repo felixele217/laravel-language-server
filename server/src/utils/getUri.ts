@@ -20,8 +20,6 @@ function getBladeUri(currentWord: WordUnderCursor) {
 
   if (!viewIdentifier) return;
 
-  // view('components.layout.superadmin-navigation');
-  // should return file:///${cwd}/resources/views/components/layout/superadmin-navigation.blade.php
   if (viewIdentifier.includes("::")) {
     const [module, viewPath] = viewIdentifier.split("::");
 
