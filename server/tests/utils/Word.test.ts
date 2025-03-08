@@ -30,7 +30,6 @@ describe("wordUnderCursor", () => {
         start: { line: 0, character: 4 },
         end: { line: 0, character: 17 },
       },
-      type: null,
     });
   });
 
@@ -81,7 +80,6 @@ describe("wordUnderCursor", () => {
         start: { line: 0, character: 7 },
         end: { line: 0, character: 16 },
       },
-      type: null,
     });
   });
 

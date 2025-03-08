@@ -1,18 +1,17 @@
 import { documents, DocumentUri } from "../documents";
-import log from "../log";
 import { Position, Range } from "../types";
 
 export type Word = {
   text: string;
   range: Range;
-  type: WordType;
+  type?: WordType;
 };
 
-type WordType = "inertia-render" | "blade-view" | null;
+type WordType = "inertia-render" | "blade-view" | undefined;
 
 export const wordUnderCursor = (
   uri: DocumentUri,
-  position: Position
+  position: Position,
 ): Word | null => {
   const document = documents.get(uri);
 
@@ -60,5 +59,5 @@ function getWordType(word: string): WordType {
     return "blade-view";
   }
 
-  return null;
+  return undefined;
 }
