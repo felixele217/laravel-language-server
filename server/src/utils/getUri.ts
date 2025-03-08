@@ -2,22 +2,69 @@ import * as fs from "fs";
 import * as path from "path";
 import { WordUnderCursor } from "./wordUnderCursor";
 import { inertiaPagesDir } from "../config";
+import log from "../log";
 
 export function getUri(currentWord: WordUnderCursor) {
   if (currentWord.type === "inertia-render") {
     return getInertiaUri(currentWord);
   }
+
+  if (currentWord.type === "blade-view") {
+    return getBladeUri(currentWord);
+  }
 }
 
-function getInertiaUri(currentWord: WordUnderCursor) {
-  const pageNameMatch = currentWord!.text.match(/'([^']*)'/);
+// felix TODO: test
+function getBladeUri(currentWord: WordUnderCursor) {
+  const viewIdentifier = getSingleQuoteString(currentWord);
 
-  if (!pageNameMatch || !pageNameMatch.length) {
+  if (!viewIdentifier) return;
+
+  if (viewIdentifier.includes("::")) {
+    const [module, viewPath] = viewIdentifier.split("::");
+
+    const moduleName = module.charAt(0).toUpperCase() + module.slice(1);
+
+    const viewFilePath = viewPath.split(".").join("/");
+
+    const fullPath = path.join(
+      process.cwd(),
+      "modules",
+      moduleName,
+      "Resources",
+      "views",
+      viewFilePath + ".blade.php",
+    );
+
+    if (!fs.existsSync(fullPath)) {
+      return;
+    }
+
+    return `file://${fullPath}`.replace(/\\/g, "/");
+  }
+
+  const viewFilePath = viewIdentifier.split(".").join("/");
+
+  const fullPath = path.join(
+    process.cwd(),
+    "resources",
+    "views",
+    viewFilePath + ".blade.php",
+  );
+  if (!fs.existsSync(fullPath)) {
     return;
   }
 
-  const pageName = getInertiaPageName(currentWord);
-  console.log(path.join(inertiaPagesDir, `${pageName}.vue`));
+  return `file://${fullPath}`.replace(/\\/g, "/");
+}
+
+function getInertiaUri(currentWord: WordUnderCursor) {
+  const pageName = getSingleQuoteString(currentWord);
+
+  if (!pageName) {
+    return;
+  }
+
   const filePath = path.join(inertiaPagesDir, `${pageName}.vue`);
 
   if (!fs.existsSync(filePath)) {
@@ -27,7 +74,8 @@ function getInertiaUri(currentWord: WordUnderCursor) {
   return `file://${filePath}`.replace(/\\/g, "/");
 }
 
-function getInertiaPageName(currentWord: WordUnderCursor) {
+// TODO: test
+function getSingleQuoteString(currentWord: WordUnderCursor) {
   const pageNameMatch = currentWord!.text.match(/'([^']*)'/);
 
   if (!pageNameMatch || !pageNameMatch.length) {
