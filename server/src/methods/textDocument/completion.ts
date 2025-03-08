@@ -124,19 +124,51 @@ function getNestedPages(
 
 function getBladeViewNames(currentWord: Word): CompletionItem[] {
   const items: CompletionItem[] = [];
-  const modulesDir = path.resolve(process.cwd(), "modules");
-
   try {
-    if (!fs.existsSync(modulesDir)) return items;
-
     const { startOffset, quoteType } = parseViewCall(currentWord.text);
     const adjustedRange = createAdjustedRange(currentWord.range, startOffset);
 
-    return getAllModuleViews(modulesDir, adjustedRange, quoteType);
+    const modulesDir = path.resolve(process.cwd(), "modules");
+    // Check if we're looking for module views
+    if (currentWord.text.includes("::")) {
+      if (fs.existsSync(modulesDir)) {
+        return getAllModuleViews(modulesDir, adjustedRange, quoteType);
+      }
+      return items;
+    }
+
+    // Handle default views from resources/views
+    const defaultViewsDir = path.resolve(process.cwd(), "resources", "views");
+    if (!fs.existsSync(defaultViewsDir)) return items;
+
+    items.push(...getAllModuleViews(modulesDir, adjustedRange, quoteType));
+    items.push(...getDefaultViews(defaultViewsDir, adjustedRange, quoteType));
+
+    return items;
   } catch (error) {
     console.error("Failed to read blade views:", error);
     return items;
   }
+}
+
+function getDefaultViews(
+  viewsDir: string,
+  range: Range,
+  quoteType: string,
+): CompletionItem[] {
+  const bladeFiles = getAllBladeFiles(viewsDir);
+
+  return bladeFiles.map((file) => {
+    const normalizedPath = normalizeViewPath(file, viewsDir);
+
+    return {
+      label: normalizedPath,
+      textEdit: {
+        range,
+        newText: `${normalizedPath}${quoteType}`,
+      },
+    };
+  });
 }
 
 function parseViewCall(text: string) {

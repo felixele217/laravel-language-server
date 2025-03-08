@@ -228,10 +228,10 @@ describe("completion", () => {
     it("returns completion items for blade view calls", () => {
       // Mock document content and word under cursor
       const uri = "file:///test.php";
-      documents.set(uri, "return view('admin.us");
+      documents.set(uri, "return view('admin::us"); // Added :: to indicate module view
 
       vi.spyOn(wordUnderCursor, "wordUnderCursor").mockReturnValue({
-        text: "view('admin.us",
+        text: "view('admin::us", // Added :: to indicate module view
         range: {
           start: { line: 0, character: 7 },
           end: { line: 0, character: 20 },
@@ -269,9 +269,12 @@ describe("completion", () => {
 
       // Mock filesystem operations
       vi.mocked(fs.existsSync).mockReturnValue(true);
-      vi.mocked(path.resolve).mockReturnValue(
-        "/Users/user/code/project/modules",
-      );
+      vi.mocked(path.resolve).mockImplementation((...args) => {
+        if (args.includes("modules")) {
+          return "/Users/user/code/project/modules";
+        }
+        return "/Users/user/code/project/resources/views";
+      });
 
       vi.mocked(fs.readdirSync).mockImplementation(
         (path: fs.PathLike): fs.Dirent[] => {
