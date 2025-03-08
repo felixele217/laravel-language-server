@@ -24,157 +24,212 @@ export interface CompletionList {
 }
 
 export interface CompletionParams extends TextDocumentPositionParams {}
-
 export const completion = (message: RequestMessage): CompletionList | null => {
-  const params = message.params as CompletionParams;
-  const content = documents.get(params.textDocument.uri);
-
-  if (!content) {
-    return null;
-  }
-
-  const currentWord = wordUnderCursor(params.textDocument.uri, params.position);
-
+  const currentWord = getValidCurrentWord(message);
   if (!currentWord) return null;
-  log.write("currentWord: " + currentWord.text);
 
-  const items: CompletionItem[] = [];
-
-  if (currentWord.type === "inertia-render") {
-    items.push(...getInertiaPageNames(currentWord));
-  }
-
-  if (currentWord.type === "blade-view") {
-    items.push(...getBladeViewNames(currentWord));
-  }
+  const items = getCompletionItems(currentWord);
 
   return {
     isIncomplete: false,
-    items: items,
+    items,
   };
 };
 
-function getBladeViewNames(currentWord: Word) {
+function getValidCurrentWord(message: RequestMessage): Word | null {
+  const params = message.params as CompletionParams;
+  const content = documents.get(params.textDocument.uri);
+  if (!content) return null;
+
+  const word = wordUnderCursor(params.textDocument.uri, params.position);
+  if (!word) return null;
+
+  log.write("currentWord: " + word.text);
+  return word;
+}
+
+function getCompletionItems(currentWord: Word): CompletionItem[] {
+  if (currentWord.type === "inertia-render") {
+    return getInertiaPageNames(currentWord);
+  }
+  if (currentWord.type === "blade-view") {
+    return getBladeViewNames(currentWord);
+  }
+  return [];
+}
+
+function getInertiaPageNames(currentWord: Word): CompletionItem[] {
+  const items: CompletionItem[] = [];
+  try {
+    const searchTerm = extractInertiaSearchTerm(currentWord.text);
+    const pagesDir = inertiaPagesDir;
+
+    if (!fs.existsSync(pagesDir)) return items;
+
+    const firstLevelItems = fs.readdirSync(pagesDir, { withFileTypes: true });
+    return [
+      ...getTopLevelPages(firstLevelItems, pagesDir, searchTerm),
+      ...getNestedPages(firstLevelItems, pagesDir, searchTerm),
+    ];
+  } catch (error) {
+    console.error("Failed to read Inertia pages directory:", error);
+    return items;
+  }
+}
+
+function extractInertiaSearchTerm(text: string): string {
+  return text.match(/Inertia::render\('([^']+)/)?.[1] || "";
+}
+
+function getTopLevelPages(
+  items: fs.Dirent[],
+  pagesDir: string,
+  searchTerm: string,
+): CompletionItem[] {
+  return items
+    .filter((item) => item.isFile() && item.name.endsWith(".vue"))
+    .map((item) => {
+      const pagePath = item.name.replace(/\.vue$/, "");
+      if (pagePath.toLowerCase().includes(searchTerm.toLowerCase())) {
+        return { label: pagePath };
+      }
+      return null;
+    })
+    .filter((item): item is CompletionItem => item !== null);
+}
+
+function getNestedPages(
+  items: fs.Dirent[],
+  pagesDir: string,
+  searchTerm: string,
+): CompletionItem[] {
+  return items
+    .filter((item) => item.isDirectory())
+    .flatMap((dir) => {
+      const nestedPath = path.join(pagesDir, dir.name);
+      const nestedItems = fs.readdirSync(nestedPath, { withFileTypes: true });
+
+      return nestedItems
+        .filter((item) => item.isFile() && item.name.endsWith(".vue"))
+        .map((item) => {
+          const pagePath = `${dir.name}/${item.name.replace(/\.vue$/, "")}`;
+          if (pagePath.toLowerCase().includes(searchTerm.toLowerCase())) {
+            return { label: pagePath };
+          }
+          return null;
+        })
+        .filter((item): item is CompletionItem => item !== null);
+    });
+}
+
+function getBladeViewNames(currentWord: Word): CompletionItem[] {
   const items: CompletionItem[] = [];
   const modulesDir = path.resolve(process.cwd(), "modules");
-  modulesDir: try {
-    if (!fs.existsSync(modulesDir)) {
-      return items;
-    }
 
-    // Find the start position and quote type
-    const viewMatch = currentWord.text.match(/view\(['"]/) || [];
-    const startOffset = viewMatch[0]?.length || 0;
-    const quoteType = viewMatch[0]?.slice(-1) || "'"; // Get the quote type (' or ")
+  try {
+    if (!fs.existsSync(modulesDir)) return items;
 
-    const adjustedRange: Range = {
-      start: {
-        line: currentWord.range.start.line,
-        character: currentWord.range.start.character + startOffset,
-      },
-      end: currentWord.range.end,
-    };
+    const { startOffset, quoteType } = parseViewCall(currentWord.text);
+    const adjustedRange = createAdjustedRange(currentWord.range, startOffset);
 
-    const modules = fs
-      .readdirSync(modulesDir, { withFileTypes: true })
-      .filter((dirent) => dirent.isDirectory());
-
-    for (const moduleDir of modules) {
-      const viewsPath = path.join(
-        modulesDir,
-        moduleDir.name,
-        "Resources",
-        "views",
-      );
-
-      if (!fs.existsSync(viewsPath)) continue;
-
-      const bladeFiles = getAllBladeFiles(viewsPath);
-
-      console.log("hallo full view");
-      for (const file of bladeFiles) {
-        const normalizedPath = path
-          .relative(viewsPath, file)
-          .replace(/\.blade\.php$/, "")
-          .split(path.sep)
-          .join(".");
-
-        const fullViewPath = `${moduleDir.name.toLowerCase()}::${normalizedPath}`;
-        log.write("fullViewPath: " + fullViewPath);
-        console.log(fullViewPath);
-
-        items.push({
-          label: fullViewPath,
-          textEdit: {
-            range: adjustedRange,
-            newText: `${fullViewPath}${quoteType}`,
-          },
-        });
-      }
-    }
+    return getAllModuleViews(modulesDir, adjustedRange, quoteType);
   } catch (error) {
     console.error("Failed to read blade views:", error);
+    return items;
+  }
+}
+
+function parseViewCall(text: string) {
+  const viewMatch = text.match(/view\(['"]/) || [];
+  return {
+    startOffset: viewMatch[0]?.length || 0,
+    quoteType: viewMatch[0]?.slice(-1) || "'",
+  };
+}
+
+function createAdjustedRange(range: Range, startOffset: number): Range {
+  return {
+    start: {
+      line: range.start.line,
+      character: range.start.character + startOffset,
+    },
+    end: range.end,
+  };
+}
+
+function getAllModuleViews(
+  modulesDir: string,
+  range: Range,
+  quoteType: string,
+): CompletionItem[] {
+  const items: CompletionItem[] = [];
+  const modules = fs
+    .readdirSync(modulesDir, { withFileTypes: true })
+    .filter((dirent) => dirent.isDirectory());
+
+  for (const moduleDir of modules) {
+    const viewsPath = path.join(
+      modulesDir,
+      moduleDir.name,
+      "Resources",
+      "views",
+    );
+    if (!fs.existsSync(viewsPath)) continue;
+
+    const bladeFiles = getAllBladeFiles(viewsPath);
+    items.push(
+      ...createCompletionItems(
+        bladeFiles,
+        viewsPath,
+        moduleDir.name,
+        range,
+        quoteType,
+      ),
+    );
   }
 
   return items;
+}
+
+function createCompletionItems(
+  files: string[],
+  viewsPath: string,
+  moduleName: string,
+  range: Range,
+  quoteType: string,
+): CompletionItem[] {
+  return files.map((file) => {
+    const normalizedPath = normalizeViewPath(file, viewsPath);
+    const fullViewPath = `${moduleName.toLowerCase()}::${normalizedPath}`;
+
+    return {
+      label: fullViewPath,
+      textEdit: {
+        range,
+        newText: `${fullViewPath}${quoteType}`,
+      },
+    };
+  });
+}
+
+function normalizeViewPath(file: string, viewsPath: string): string {
+  return path
+    .relative(viewsPath, file)
+    .replace(/\.blade\.php$/, "")
+    .split(path.sep)
+    .join(".");
 }
 
 function getAllBladeFiles(dir: string): string[] {
-  let results: string[] = [];
-
   const items = fs.readdirSync(dir, { withFileTypes: true });
-
-  for (const item of items) {
+  return items.reduce<string[]>((results, item) => {
     const fullPath = path.join(dir, item.name);
-
     if (item.isDirectory()) {
-      results = results.concat(getAllBladeFiles(fullPath));
-    } else if (item.isFile() && item.name.endsWith(".blade.php")) {
+      return results.concat(getAllBladeFiles(fullPath));
+    }
+    if (item.isFile() && item.name.endsWith(".blade.php")) {
       results.push(fullPath);
     }
-  }
-
-  return results;
-}
-
-function getInertiaPageNames(currentWord: Word) {
-  const items = [];
-  const pagesDir = inertiaPagesDir;
-
-  try {
-    const searchTerm =
-      currentWord.text.match(/Inertia::render\('([^']+)/)?.[1] || "";
-
-    const firstLevelItems = fs.readdirSync(pagesDir, { withFileTypes: true });
-
-    for (const item of firstLevelItems) {
-      if (item.isFile() && item.name.endsWith(".vue")) {
-        const pagePath = item.name.replace(/\.vue$/, "");
-        if (pagePath.toLowerCase().includes(searchTerm.toLowerCase())) {
-          items.push({ label: pagePath });
-        }
-      } else if (item.isDirectory()) {
-        const secondLevelPath = path.join(pagesDir, item.name);
-        const secondLevelItems = fs.readdirSync(secondLevelPath, {
-          withFileTypes: true,
-        });
-
-        for (const subItem of secondLevelItems) {
-          if (subItem.isFile() && subItem.name.endsWith(".vue")) {
-            const pagePath = `${item.name}/${subItem.name.replace(
-              /\.vue$/,
-              "",
-            )}`;
-            if (pagePath.toLowerCase().includes(searchTerm.toLowerCase())) {
-              items.push({ label: pagePath });
-            }
-          }
-        }
-      }
-    }
-  } catch (error) {
-    console.error("Failed to read Inertia pages directory:", error);
-  }
-
-  return items;
+    return results;
+  }, []);
 }

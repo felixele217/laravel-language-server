@@ -50,24 +50,38 @@ describe("completion", () => {
 
     // Mock filesystem
     const mockFiles = [
-      { name: "Dashboard.vue", isFile: () => true, isDirectory: () => false },
-      { name: "Admin", isFile: () => false, isDirectory: () => true },
+      vi.mocked<fs.Dirent>({
+        name: "Dashboard.vue",
+        isFile: () => true,
+        isDirectory: () => false,
+      } as fs.Dirent),
+      vi.mocked<fs.Dirent>({
+        name: "Admin",
+        isFile: () => false,
+        isDirectory: () => true,
+      } as fs.Dirent),
     ];
+
     const mockSubFiles = [
-      {
+      vi.mocked<fs.Dirent>({
         name: "DashboardAdmin.vue",
         isFile: () => true,
         isDirectory: () => false,
-      },
+      } as fs.Dirent),
     ];
 
-    // @ts-ignore
-    vi.mocked(fs.readdirSync).mockImplementation((path: string) => {
-      if (path.includes("Admin")) {
-        return mockSubFiles as any;
-      }
-      return mockFiles as any;
-    });
+    vi.mocked(fs.existsSync).mockReturnValue(true);
+
+    vi.mocked(fs.readdirSync).mockImplementation(
+      (path: fs.PathLike, options?: any): fs.Dirent[] => {
+        const normalizedPath = path.toString();
+
+        if (normalizedPath.includes("Admin")) {
+          return mockSubFiles;
+        }
+        return mockFiles;
+      },
+    );
 
     vi.mocked(path.join).mockImplementation((...args) => args.join("/"));
 
@@ -146,19 +160,51 @@ describe("completion", () => {
 
     // Mock filesystem
     const mockFiles = [
-      {
-        name: "timesheet/TimesheetPage.vue",
-        isFile: () => true,
-        isDirectory: () => false,
-      },
-      {
-        name: "customers/Upsert.vue",
-        isFile: () => true,
-        isDirectory: () => false,
-      },
+      vi.mocked<fs.Dirent>({
+        name: "timesheet",
+        isFile: () => false,
+        isDirectory: () => true,
+      } as fs.Dirent),
+      vi.mocked<fs.Dirent>({
+        name: "customers",
+        isFile: () => false,
+        isDirectory: () => true,
+      } as fs.Dirent),
     ];
 
-    vi.mocked(fs.readdirSync).mockReturnValue(mockFiles as any);
+    const mockTimesheetFiles = [
+      vi.mocked<fs.Dirent>({
+        name: "TimesheetPage.vue",
+        isFile: () => true,
+        isDirectory: () => false,
+      } as fs.Dirent),
+    ];
+
+    const mockCustomerFiles = [
+      vi.mocked<fs.Dirent>({
+        name: "Upsert.vue",
+        isFile: () => true,
+        isDirectory: () => false,
+      } as fs.Dirent),
+    ];
+
+    vi.mocked(fs.existsSync).mockReturnValue(true);
+
+    vi.mocked(fs.readdirSync).mockImplementation(
+      (path: fs.PathLike, options?: any): fs.Dirent[] => {
+        const normalizedPath = path.toString();
+
+        if (normalizedPath.includes("timesheet")) {
+          return mockTimesheetFiles;
+        }
+        if (normalizedPath.includes("customers")) {
+          return mockCustomerFiles;
+        }
+        return mockFiles;
+      },
+    );
+
+    vi.mocked(path.join).mockImplementation((...args) => args.join("/"));
 
     const message = {
       jsonrpc: "2.0",
