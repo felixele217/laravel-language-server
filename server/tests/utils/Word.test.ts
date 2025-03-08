@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { documents } from "../../src/documents";
 import { Position } from "../../src/types";
-import { wordUnderCursor } from "../../src/utils/wordUnderCursor";
+import { wordUnderCursor } from "../../src/utils/Word";
 
 describe("wordUnderCursor", () => {
   const mockUri = "file:///test.php";

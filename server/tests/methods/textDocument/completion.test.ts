@@ -3,7 +3,7 @@ import { completion } from "../../../src/methods/textDocument/completion";
 import { documents } from "../../../src/documents";
 import * as fs from "fs";
 import * as path from "path";
-import * as wordUnderCursor from "../../../src/utils/wordUnderCursor";
+import * as wordUnderCursor from "../../../src/utils/Word";
 
 describe("completion", () => {
   beforeEach(() => {

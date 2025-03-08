@@ -2,7 +2,7 @@ import log from "../../log";
 import { RequestMessage } from "../../server";
 import { Position, Range } from "../../types";
 import { getUri } from "../../utils/Uri";
-import { WordUnderCursor, wordUnderCursor } from "../../utils/wordUnderCursor";
+import { Word, wordUnderCursor } from "../../utils/Word";
 
 type DocumentUri = string;
 

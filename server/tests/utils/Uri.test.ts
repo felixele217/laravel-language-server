@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { getUri } from "../../src/utils/Uri";
 import * as path from "path";
 import * as fs from "fs";
-import { WordUnderCursor } from "../../src/utils/wordUnderCursor";
+import { Word } from "../../src/utils/wordUnderCursor";
 
 vi.mock("fs");
 vi.mock("path");
@@ -16,7 +16,7 @@ describe("Uri", () => {
   });
 
   it("returns undefined for null type", () => {
-    const word: WordUnderCursor = {
+    const word: Word = {
       type: null,
       text: "'Test'",
       range: {
@@ -30,7 +30,7 @@ describe("Uri", () => {
 
   describe("Inertia views", () => {
     it("returns file URI when inertia page exists", () => {
-      const word: WordUnderCursor = {
+      const word: Word = {
         type: "inertia-render",
         text: "'Test/Page'",
         range: {
@@ -46,7 +46,7 @@ describe("Uri", () => {
     });
 
     it("returns undefined when page name cannot be extracted", () => {
-      const word: WordUnderCursor = {
+      const word: Word = {
         type: "inertia-render",
         text: "invalid",
         range: {
@@ -59,7 +59,7 @@ describe("Uri", () => {
     });
 
     it("returns undefined when file does not exist", () => {
-      const word: WordUnderCursor = {
+      const word: Word = {
         type: "inertia-render",
         text: "'NonExistent'",
         range: {
@@ -80,7 +80,7 @@ describe("Uri", () => {
     });
 
     it("returns file URI for existing simple view", () => {
-      const word: WordUnderCursor = {
+      const word: Word = {
         text: "view('dashboard')",
         range: {
           start: { line: 0, character: 0 },
@@ -93,12 +93,12 @@ describe("Uri", () => {
       vi.mocked(fs.existsSync).mockReturnValue(true);
 
       expect(getUri(word)).toBe(
-        "file:///fake/project/root/resources/views/dashboard.blade.php",
+        "file:///fake/project/root/resources/views/dashboard.blade.php"
       );
     });
 
     it("returns file URI for existing nested view", () => {
-      const word: WordUnderCursor = {
+      const word: Word = {
         text: "view('components.layout.navigation')",
         range: {
           start: { line: 0, character: 0 },
@@ -111,12 +111,12 @@ describe("Uri", () => {
       vi.mocked(fs.existsSync).mockReturnValue(true);
 
       expect(getUri(word)).toBe(
-        "file:///fake/project/root/resources/views/components/layout/navigation.blade.php",
+        "file:///fake/project/root/resources/views/components/layout/navigation.blade.php"
       );
     });
 
     it("returns undefined when file does not exist", () => {
-      const word: WordUnderCursor = {
+      const word: Word = {
         text: "view('non-existent-view')",
         range: {
           start: { line: 0, character: 0 },
@@ -132,7 +132,7 @@ describe("Uri", () => {
     });
 
     it("handles module views", () => {
-      const word: WordUnderCursor = {
+      const word: Word = {
         text: "view('stripebilling::admin.index')",
         range: {
           start: { line: 0, character: 0 },
@@ -145,12 +145,12 @@ describe("Uri", () => {
       vi.mocked(fs.existsSync).mockReturnValue(true);
 
       expect(getUri(word)).toBe(
-        "file:///fake/project/root/modules/Stripebilling/Resources/views/admin/index.blade.php",
+        "file:///fake/project/root/modules/Stripebilling/Resources/views/admin/index.blade.php"
       );
     });
 
     it("handles deeply nested view paths", () => {
-      const word: WordUnderCursor = {
+      const word: Word = {
         text: "view('admin.users.profile.settings')",
         range: {
           start: { line: 0, character: 0 },
@@ -163,12 +163,12 @@ describe("Uri", () => {
       vi.mocked(fs.existsSync).mockReturnValue(true);
 
       expect(getUri(word)).toBe(
-        "file:///fake/project/root/resources/views/admin/users/profile/settings.blade.php",
+        "file:///fake/project/root/resources/views/admin/users/profile/settings.blade.php"
       );
     });
 
     it("handles windows-style paths", () => {
-      const word: WordUnderCursor = {
+      const word: Word = {
         text: "view('components.layout')",
         range: {
           start: { line: 0, character: 0 },
@@ -181,7 +181,7 @@ describe("Uri", () => {
       vi.mocked(fs.existsSync).mockReturnValue(true);
 
       expect(getUri(word)).toBe(
-        "file:///fake/project/root/resources/views/components/layout.blade.php",
+        "file:///fake/project/root/resources/views/components/layout.blade.php"
       );
     });
   });

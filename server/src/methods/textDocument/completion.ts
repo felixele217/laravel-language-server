@@ -2,7 +2,7 @@ import { inertiaPagesDir } from "../../config";
 import { documents } from "../../documents";
 import log from "../../log";
 import { RequestMessage } from "../../server";
-import { WordUnderCursor, wordUnderCursor } from "../../utils/wordUnderCursor";
+import { Word, wordUnderCursor } from "../../utils/Word";
 import { TextDocumentPositionParams } from "./definition";
 import * as fs from "fs";
 import * as path from "path";
@@ -43,7 +43,7 @@ export const completion = (message: RequestMessage): CompletionList | null => {
   };
 };
 
-function getInertiaPageNames(currentWord: WordUnderCursor) {
+function getInertiaPageNames(currentWord: Word) {
   const items = [];
   const pagesDir = inertiaPagesDir;
 
@@ -67,7 +67,10 @@ function getInertiaPageNames(currentWord: WordUnderCursor) {
 
         for (const subItem of secondLevelItems) {
           if (subItem.isFile() && subItem.name.endsWith(".vue")) {
-            const pagePath = `${item.name}/${subItem.name.replace(/\.vue$/, "")}`;
+            const pagePath = `${item.name}/${subItem.name.replace(
+              /\.vue$/,
+              "",
+            )}`;
             if (pagePath.toLowerCase().includes(searchTerm.toLowerCase())) {
               items.push({ label: pagePath });
             }

@@ -1,10 +1,10 @@
 import * as fs from "fs";
 import * as path from "path";
-import { WordUnderCursor } from "./wordUnderCursor";
+import { Word } from "./Word";
 import { inertiaPagesDir } from "../config";
 import { getSingleQuoteString } from "./String";
 
-export function getUri(currentWord: WordUnderCursor) {
+export function getUri(currentWord: Word) {
   if (currentWord.type === "inertia-render") {
     return getInertiaUri(currentWord);
   }
@@ -14,7 +14,7 @@ export function getUri(currentWord: WordUnderCursor) {
   }
 }
 
-function getBladeUri(currentWord: WordUnderCursor) {
+function getBladeUri(currentWord: Word) {
   const viewIdentifier = getSingleQuoteString(currentWord);
 
   if (!viewIdentifier) return;
@@ -32,7 +32,7 @@ function getBladeUri(currentWord: WordUnderCursor) {
       moduleName,
       "Resources",
       "views",
-      viewFilePath + ".blade.php",
+      viewFilePath + ".blade.php"
     );
 
     if (!fs.existsSync(fullPath)) {
@@ -48,7 +48,7 @@ function getBladeUri(currentWord: WordUnderCursor) {
     process.cwd(),
     "resources",
     "views",
-    viewFilePath + ".blade.php",
+    viewFilePath + ".blade.php"
   );
   if (!fs.existsSync(fullPath)) {
     return;
@@ -57,7 +57,7 @@ function getBladeUri(currentWord: WordUnderCursor) {
   return normalizedUri(fullPath);
 }
 
-function getInertiaUri(currentWord: WordUnderCursor) {
+function getInertiaUri(currentWord: Word) {
   const pageName = getSingleQuoteString(currentWord);
 
   if (!pageName) {

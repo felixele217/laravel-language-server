@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { definition } from "../../../src/methods/textDocument/definition";
-import * as wordUnderCursor from "../../../src/utils/wordUnderCursor";
+import * as wordUnderCursor from "../../../src/utils/Word";
 import * as getUriModule from "../../../src/utils/Uri";
 import { RequestMessage } from "../../../src/server";
 
@@ -87,7 +87,7 @@ describe("definition", () => {
 
   it("returns location when valid definition is found", () => {
     // Mock wordUnderCursor
-    const mockWord: wordUnderCursor.WordUnderCursor = {
+    const mockWord: wordUnderCursor.Word = {
       text: 'Inertia::render("Dashboard")',
       range: {
         start: { line: 0, character: 0 },
