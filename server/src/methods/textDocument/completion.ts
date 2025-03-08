@@ -2,6 +2,7 @@ import { inertiaPagesDir } from "../../config";
 import { documents } from "../../documents";
 import log from "../../log";
 import { RequestMessage } from "../../server";
+import { Range } from "../../types";
 import { Word, wordUnderCursor } from "../../utils/Word";
 import { TextDocumentPositionParams } from "./definition";
 import * as fs from "fs";
@@ -9,7 +10,13 @@ import * as path from "path";
 
 type CompletionItem = {
   label: string;
+  textEdit?: TextEdit;
 };
+
+interface TextEdit {
+  range: Range;
+  newText: string;
+}
 
 export interface CompletionList {
   isIncomplete: boolean;
@@ -56,6 +63,19 @@ function getBladeViewNames(currentWord: Word) {
       return items;
     }
 
+    // Find the start position and quote type
+    const viewMatch = currentWord.text.match(/view\(['"]/) || [];
+    const startOffset = viewMatch[0]?.length || 0;
+    const quoteType = viewMatch[0]?.slice(-1) || "'"; // Get the quote type (' or ")
+
+    const adjustedRange: Range = {
+      start: {
+        line: currentWord.range.start.line,
+        character: currentWord.range.start.character + startOffset,
+      },
+      end: currentWord.range.end,
+    };
+
     const modules = fs
       .readdirSync(modulesDir, { withFileTypes: true })
       .filter((dirent) => dirent.isDirectory());
@@ -73,7 +93,6 @@ function getBladeViewNames(currentWord: Word) {
       const bladeFiles = getAllBladeFiles(viewsPath);
 
       for (const file of bladeFiles) {
-        // Normalize the path to prevent double module names
         const normalizedPath = path
           .relative(viewsPath, file)
           .replace(/\.blade\.php$/, "")
@@ -84,6 +103,10 @@ function getBladeViewNames(currentWord: Word) {
 
         items.push({
           label: fullViewPath,
+          textEdit: {
+            range: adjustedRange,
+            newText: `${fullViewPath}${quoteType}`,
+          },
         });
       }
     }
