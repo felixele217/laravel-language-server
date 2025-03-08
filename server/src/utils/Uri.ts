@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { WordUnderCursor } from "./wordUnderCursor";
 import { inertiaPagesDir } from "../config";
-import log from "../log";
+import { getSingleQuoteString } from "./String";
 
 export function getUri(currentWord: WordUnderCursor) {
   if (currentWord.type === "inertia-render") {
@@ -39,7 +39,7 @@ function getBladeUri(currentWord: WordUnderCursor) {
       return;
     }
 
-    return `file://${fullPath}`.replace(/\\/g, "/");
+    return normalizedUri(fullPath);
   }
 
   const viewFilePath = viewIdentifier.split(".").join("/");
@@ -54,7 +54,7 @@ function getBladeUri(currentWord: WordUnderCursor) {
     return;
   }
 
-  return `file://${fullPath}`.replace(/\\/g, "/");
+  return normalizedUri(fullPath);
 }
 
 function getInertiaUri(currentWord: WordUnderCursor) {
@@ -70,16 +70,9 @@ function getInertiaUri(currentWord: WordUnderCursor) {
     return;
   }
 
-  return `file://${filePath}`.replace(/\\/g, "/");
+  return normalizedUri(filePath);
 }
 
-// TODO: test
-function getSingleQuoteString(currentWord: WordUnderCursor) {
-  const pageNameMatch = currentWord!.text.match(/'([^']*)'/);
-
-  if (!pageNameMatch || !pageNameMatch.length) {
-    return;
-  }
-
-  return pageNameMatch[1];
+function normalizedUri(filePath: string) {
+  return `file://${filePath}`.replace(/\\/g, "/");
 }

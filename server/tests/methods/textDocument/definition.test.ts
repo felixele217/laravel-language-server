@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { definition } from "../../../src/methods/textDocument/definition";
 import * as wordUnderCursor from "../../../src/utils/wordUnderCursor";
-import * as getUriModule from "../../../src/utils/getUri";
+import * as getUriModule from "../../../src/utils/Uri";
 import { RequestMessage } from "../../../src/server";
 
 describe("definition", () => {

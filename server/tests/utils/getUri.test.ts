@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { getUri } from "../../src/utils/getUri";
+import { getUri } from "../../src/utils/Uri";
 import * as path from "path";
 import * as fs from "fs";
 import { WordUnderCursor } from "../../src/utils/wordUnderCursor";
@@ -10,7 +10,7 @@ vi.mock("../config", () => ({
   inertiaPagesDir: "/fake/path",
 }));
 
-describe("getUri", () => {
+describe("Uri", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
