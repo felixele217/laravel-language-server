@@ -68,7 +68,7 @@ function getInertiaPageNames(currentWord: Word): CompletionItem[] {
 
     const firstLevelItems = fs.readdirSync(pagesDir, { withFileTypes: true });
     return [
-      ...getTopLevelPages(firstLevelItems, pagesDir, searchTerm),
+      ...getTopLevelPages(firstLevelItems, searchTerm),
       ...getNestedPages(firstLevelItems, pagesDir, searchTerm),
     ];
   } catch (error) {
@@ -83,7 +83,6 @@ function extractInertiaSearchTerm(text: string): string {
 
 function getTopLevelPages(
   items: fs.Dirent[],
-  pagesDir: string,
   searchTerm: string,
 ): CompletionItem[] {
   return items
@@ -125,14 +124,11 @@ function getNestedPages(
 function getBladeViewNames(currentWord: Word): CompletionItem[] {
   const items: CompletionItem[] = [];
   try {
-    const { startOffset, quoteType } = parseViewCall(currentWord.text);
-    const adjustedRange = createAdjustedRange(currentWord.range, startOffset);
-
     const modulesDir = path.resolve(process.cwd(), "modules");
     // Check if we're looking for module views
     if (currentWord.text.includes("::")) {
       if (fs.existsSync(modulesDir)) {
-        return getAllModuleViews(modulesDir, adjustedRange, quoteType);
+        return getAllModuleViews(modulesDir);
       }
       return items;
     }
@@ -141,8 +137,8 @@ function getBladeViewNames(currentWord: Word): CompletionItem[] {
     const defaultViewsDir = path.resolve(process.cwd(), "resources", "views");
     if (!fs.existsSync(defaultViewsDir)) return items;
 
-    items.push(...getAllModuleViews(modulesDir, adjustedRange, quoteType));
-    items.push(...getDefaultViews(defaultViewsDir, adjustedRange, quoteType));
+    items.push(...getAllModuleViews(modulesDir));
+    items.push(...getDefaultViews(defaultViewsDir));
 
     return items;
   } catch (error) {
@@ -151,49 +147,17 @@ function getBladeViewNames(currentWord: Word): CompletionItem[] {
   }
 }
 
-function getDefaultViews(
-  viewsDir: string,
-  range: Range,
-  quoteType: string,
-): CompletionItem[] {
+function getDefaultViews(viewsDir: string): CompletionItem[] {
   const bladeFiles = getAllBladeFiles(viewsDir);
 
   return bladeFiles.map((file) => {
     const normalizedPath = normalizeViewPath(file, viewsDir);
 
-    return {
-      label: normalizedPath,
-      textEdit: {
-        range,
-        newText: `${normalizedPath}${quoteType}`,
-      },
-    };
+    return { label: normalizedPath };
   });
 }
 
-function parseViewCall(text: string) {
-  const viewMatch = text.match(/view\(['"]/) || [];
-  return {
-    startOffset: viewMatch[0]?.length || 0,
-    quoteType: viewMatch[0]?.slice(-1) || "'",
-  };
-}
-
-function createAdjustedRange(range: Range, startOffset: number): Range {
-  return {
-    start: {
-      line: range.start.line,
-      character: range.start.character + startOffset,
-    },
-    end: range.end,
-  };
-}
-
-function getAllModuleViews(
-  modulesDir: string,
-  range: Range,
-  quoteType: string,
-): CompletionItem[] {
+function getAllModuleViews(modulesDir: string): CompletionItem[] {
   const items: CompletionItem[] = [];
   const modules = fs
     .readdirSync(modulesDir, { withFileTypes: true })
@@ -209,15 +173,7 @@ function getAllModuleViews(
     if (!fs.existsSync(viewsPath)) continue;
 
     const bladeFiles = getAllBladeFiles(viewsPath);
-    items.push(
-      ...createCompletionItems(
-        bladeFiles,
-        viewsPath,
-        moduleDir.name,
-        range,
-        quoteType,
-      ),
-    );
+    items.push(...createCompletionItems(bladeFiles, viewsPath, moduleDir.name));
   }
 
   return items;
@@ -227,20 +183,12 @@ function createCompletionItems(
   files: string[],
   viewsPath: string,
   moduleName: string,
-  range: Range,
-  quoteType: string,
 ): CompletionItem[] {
   return files.map((file) => {
     const normalizedPath = normalizeViewPath(file, viewsPath);
     const fullViewPath = `${moduleName.toLowerCase()}::${normalizedPath}`;
 
-    return {
-      label: fullViewPath,
-      textEdit: {
-        range,
-        newText: `${fullViewPath}${quoteType}`,
-      },
-    };
+    return { label: fullViewPath };
   });
 }
 

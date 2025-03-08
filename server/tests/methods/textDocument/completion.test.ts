@@ -312,28 +312,7 @@ describe("completion", () => {
       // Verify results
       expect(result).toEqual({
         isIncomplete: false,
-        items: [
-          {
-            label: "admin::users",
-            textEdit: {
-              range: {
-                start: { line: 0, character: 13 },
-                end: { line: 0, character: 20 },
-              },
-              newText: "admin::users'",
-            },
-          },
-          {
-            label: "site::timesheet.index",
-            textEdit: {
-              range: {
-                start: { line: 0, character: 13 },
-                end: { line: 0, character: 20 },
-              },
-              newText: "site::timesheet.index'",
-            },
-          },
-        ],
+        items: [{ label: "admin::users" }, { label: "site::timesheet.index" }],
       });
     });
 
@@ -468,36 +447,9 @@ describe("completion", () => {
     expect(result).toEqual({
       isIncomplete: false,
       items: [
-        {
-          label: "admin::users.list",
-          textEdit: {
-            range: {
-              start: { line: 0, character: 13 },
-              end: { line: 0, character: 20 },
-            },
-            newText: "admin::users.list'",
-          },
-        },
-        {
-          label: "site::users.index",
-          textEdit: {
-            range: {
-              start: { line: 0, character: 13 },
-              end: { line: 0, character: 20 },
-            },
-            newText: "site::users.index'",
-          },
-        },
-        {
-          label: "users.create",
-          textEdit: {
-            range: {
-              start: { line: 0, character: 13 },
-              end: { line: 0, character: 20 },
-            },
-            newText: "users.create'",
-          },
-        },
+        { label: "admin::users.list" },
+        { label: "site::users.index" },
+        { label: "users.create" },
       ],
     });
   });
